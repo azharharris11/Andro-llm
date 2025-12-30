@@ -41,15 +41,15 @@ const getFormatVisualGuide = (format: CreativeFormat): string => {
         case CreativeFormat.BIG_FONT:
             return "Style: Massive, aggressive typography filling 80% of the frame. High contrast (e.g., Neon Green on Black). Text IS the visual hook.";
         case CreativeFormat.GMAIL_UX:
-            return "Style: Gmail Inbox Interface. Subject line looks like a critical personal email. Triggers the 'Check Mail' psychological reflex.";
+            return "Style: Gmail Inbox Interface. MUST have: White background, Standard Google font, Star icon (yellow), 'Inbox' label, Subject line in bold.";
         case CreativeFormat.BILLBOARD:
             return "Style: Realistic outdoor billboard on a highway or skyscraper. Cinematic lighting. Perception of scale and authority.";
         case CreativeFormat.UGLY_VISUAL:
-            return "Style: The Ugly Ad Blueprint. Low-res collage, mismatched fonts, 'disturbing' or shocking visual metaphors to break banner blindness.";
+            return "Style: The Ugly Ad Blueprint. Low-res collage, mismatched fonts, 'disturbing' or shocking visual metaphors to break banner blindness. Amateur aesthetic.";
         case CreativeFormat.MS_PAINT:
             return "Style: Crude MS Paint drawings. Amateur brush strokes, neon colors. Intentionally lo-fi to trigger curiosity and pattern interrupt.";
         case CreativeFormat.REDDIT_THREAD:
-            return "Style: Reddit Discussion UI. Dark Mode. Upvotes, awards, and community names visible. Vibe: 'The community found a secret'.";
+            return "Style: Reddit Discussion UI. Dark Mode. MUST have: Upvote/Downvote arrows (orange/blue), u/username, 'Join' button, Award icons. Vibe: 'The community found a secret'.";
         case CreativeFormat.MEME:
             return "Style: Classic meme format. Impact font with black borders or X/Twitter style caption over a relatable, funny image.";
         case CreativeFormat.LONG_TEXT:
@@ -73,11 +73,11 @@ const getFormatVisualGuide = (format: CreativeFormat): string => {
 
         // --- NATIVE / SOCIAL (UX FAMILIARITY BIAS) ---
         case CreativeFormat.IG_STORY_TEXT:
-            return "Style: 100% Native IG Story. ont: Typewriter. Background: Blurry candid photo. ";
+            return "Style: 100% Native IG Story. Font: Typewriter. Background: Blurry candid photo. Must look like a real user story.";
         case CreativeFormat.TWITTER_REPOST:
-            return "Style: X/Twitter Post screenshot. Sharp UI, authentic icons. High authority. Vibe: Viral thought or expert advice.";
+            return "Style: X/Twitter Post screenshot. Sharp UI. MUST have: Profile pic, Handle (@name), Retweet/Like icons, Time stamp. High authority.";
         case CreativeFormat.PHONE_NOTES:
-            return "Style: Apple Notes UI. Dark mode or yellow paper. Includes digital scribbles and highlights. Kesan: 'Bocoran Catatan Rahasia'.";
+            return "Style: Apple Notes UI. Dark mode or yellow paper. MUST have: Back arrow '< Notes', Date stamp, Digital scribbles/circles in marker.";
         case CreativeFormat.AESTHETIC_MINIMAL:
             return "Style: High-end editorial (Beige/Cream tones). Serif fonts, plenty of white space. Aspirational and premium.";
         case CreativeFormat.STORY_POLL:

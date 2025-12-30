@@ -120,10 +120,6 @@ export const generateCreativeStrategy = async (
     Target Country: ${country} (Native Language for Copy & Embedded Text)
     Language Register: ${register}
 
-    **STRATEGIC GUIDELINES:**
-    ${strategyInstruction}
-    ${formatInstruction}
-
     **CORE INPUTS:**
     Product: ${project.productName} - ${project.productDescription}
     Winning Hook/Angle: "${angle}"
@@ -134,6 +130,14 @@ export const generateCreativeStrategy = async (
     Symptoms: ${personaPain}
     ${story ? `Narrative Context: ${story.narrative}` : ''}
     ${bigIdea ? `Big Idea Shift: ${bigIdea.concept}` : ''}
+
+    **THE 80/20 RULE (CRITICAL):**
+    - **80% MESSAGING:** The primary goal is to communicate the ANGLE ("${angle}"). The visual is just a vehicle for this message.
+    - **20% CONCEPT:** The format (${format}) is just the wrapper. Don't let the "art" distract from the "offer".
+    
+    **STRATEGIC GUIDELINES:**
+    ${strategyInstruction}
+    ${formatInstruction}
     
     **TASK:** 
     Design the COMPLETE Creative Asset in one cohesive step.

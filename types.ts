@@ -14,7 +14,10 @@ export enum NodeType {
   HVCO_NODE = 'HVCO_NODE',            // High Value Content Offer (Lead Magnet)
   
   // --- ANDROMEDA DESIRE FIRST NODES ---
-  MASS_DESIRE_NODE = 'MASS_DESIRE_NODE' // Level 3: Desire Discovery
+  MASS_DESIRE_NODE = 'MASS_DESIRE_NODE', // Level 3: Desire Discovery
+  
+  // --- CONVERSION ASSETS ---
+  LANDING_PAGE_NODE = 'LANDING_PAGE_NODE' // The destination for the ad
 }
 
 export enum CreativeFormat {
@@ -229,6 +232,7 @@ export interface NodeData {
   testingTier?: TestingTier; 
   variableIsolated?: string; 
   congruenceRationale?: string; 
+  validationStatus?: 'PENDING' | 'VALIDATED' | 'REJECTED'; // New: For Angle Validation
   
   inputTokens?: number;
   outputTokens?: number;

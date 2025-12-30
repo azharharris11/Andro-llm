@@ -98,6 +98,37 @@ const App: React.FC = () => {
 
   const canvasRef = useRef<CanvasHandle>(null);
 
+  // --- ANCESTRY TRAVERSAL (SOLVES CONTEXT AMNESIA) ---
+  const getAncestryContext = (startNodeId: string) => {
+    let currentNode = nodes.find(n => n.id === startNodeId);
+    let accumulatedContext: any = {};
+    
+    // Explicit keys we want to inherit
+    const mergeKeys = ['massDesireData', 'storyData', 'bigIdeaData', 'mechanismData', 'hvcoData', 'meta'];
+
+    while (currentNode) {
+        // Merge data, prioritizing child data (more specific) over parent data
+        mergeKeys.forEach(key => {
+            if ((currentNode as any)[key]) {
+                // If it's 'meta', we merge objects. Otherwise, we set if not exists.
+                if (key === 'meta') {
+                    accumulatedContext.meta = { ...(currentNode as any).meta, ...accumulatedContext.meta };
+                } else if (!accumulatedContext[key]) {
+                    accumulatedContext[key] = (currentNode as any)[key];
+                }
+            }
+        });
+        
+        // Find parent
+        if (currentNode.parentId) {
+            currentNode = nodes.find(n => n.id === currentNode!.parentId);
+        } else {
+            currentNode = undefined;
+        }
+    }
+    return accumulatedContext;
+  };
+
   const addNode = (node: NodeData, parentId?: string) => {
       setNodes(prev => [...prev, node]);
       if (parentId) {
@@ -190,7 +221,6 @@ const App: React.FC = () => {
       // Handle EXPRESS PROMO FLOW (NEW)
       if (action === 'start_express_flow') {
           handleUpdateNode(nodeId, { isLoading: true });
-          // Temporarily force strategy mode to HARD_SELL for this action context if not already
           const expressProject = { ...project, strategyMode: StrategyMode.HARD_SELL };
           const result = await GeminiService.generateExpressAngles(expressProject);
           handleUpdateNode(nodeId, { isLoading: false });
@@ -199,7 +229,7 @@ const App: React.FC = () => {
               result.data.forEach((promo: any, i: number) => {
                    addNode({
                        id: uuidv4(),
-                       type: NodeType.ANGLE, // Reuse Angle node but it is a "Promo Angle"
+                       type: NodeType.ANGLE,
                        title: promo.headline,
                        description: `${promo.testingTier}: ${promo.hook}`,
                        meta: { angle: promo.hook, ...promo },
@@ -225,7 +255,7 @@ const App: React.FC = () => {
                       title: idea.headline,
                       description: idea.concept,
                       bigIdeaData: idea,
-                      storyData: node.storyData, // Pass down
+                      storyData: node.storyData,
                       x: node.x + 400,
                       y: node.y + (i - 1) * 300,
                       parentId: nodeId
@@ -247,8 +277,8 @@ const App: React.FC = () => {
                       title: mech.scientificPseudo,
                       description: `UMP: ${mech.ump} | UMS: ${mech.ums}`,
                       mechanismData: mech,
-                      bigIdeaData: node.bigIdeaData, // Pass down
-                      storyData: node.storyData, // Pass down
+                      bigIdeaData: node.bigIdeaData,
+                      storyData: node.storyData,
                       x: node.x + 400,
                       y: node.y + (i - 1) * 300,
                       parentId: nodeId
@@ -274,18 +304,15 @@ const App: React.FC = () => {
                        bigIdeaData: node.bigIdeaData,
                        storyData: node.storyData,
                        x: node.x + 400,
-                       y: node.y + (i - 2) * 150, // tighter packing
+                       y: node.y + (i - 2) * 150,
                        parentId: nodeId
                    }, nodeId);
                });
            }
       }
 
-      // Handle Angles Expansion (Supports both Persona and Mass Desire inputs)
       if (action === 'expand_angles') {
           handleUpdateNode(nodeId, { isLoading: true });
-          
-          // Determine Context (Persona vs Mass Desire)
           const personaName = node.title;
           const personaMotivation = node.meta?.motivation || "General Public";
           const massDesire = node.massDesireData;
@@ -300,8 +327,9 @@ const App: React.FC = () => {
                       type: NodeType.ANGLE,
                       title: a.headline,
                       description: `${a.testingTier}: ${a.hook}`,
-                      meta: { ...node.meta, angle: a.hook, ...a }, // Inherit metadata
+                      meta: { ...node.meta, angle: a.hook, ...a },
                       testingTier: a.testingTier,
+                      validationStatus: 'PENDING', // NEW: Waiting for user validation
                       x: node.x + 400,
                       y: node.y + (i - 1) * 250,
                       parentId: nodeId
@@ -310,7 +338,12 @@ const App: React.FC = () => {
           }
       }
       
-      // Handle HVCO
+      // NEW: Toggle Validation
+      if (action === 'toggle_validation') {
+          const newStatus = node.validationStatus === 'VALIDATED' ? 'PENDING' : 'VALIDATED';
+          handleUpdateNode(nodeId, { validationStatus: newStatus });
+      }
+
       if (action === 'generate_hvco' && node.meta) {
            handleUpdateNode(nodeId, { isLoading: true });
            const pain = node.meta.visceralSymptoms?.[0] || "General Pain";
@@ -325,7 +358,7 @@ const App: React.FC = () => {
                        title: hvco.title,
                        description: hvco.hook,
                        hvcoData: hvco,
-                       meta: node.meta, // Inherit Persona
+                       meta: node.meta,
                        x: node.x + 400,
                        y: node.y + (i - 1) * 200,
                        parentId: nodeId
@@ -334,15 +367,42 @@ const App: React.FC = () => {
            }
       }
 
-      // Handle Creative Generation (Opening Selector)
       if (action === 'generate_creatives' || action === 'open_format_selector') {
           setPendingFormatParentId(nodeId);
           setIsFormatSelectorOpen(true);
       }
       
-      // Handle Promotion
       if (action === 'promote_creative') {
           handleUpdateNode(nodeId, { stage: CampaignStage.SCALING, isWinning: true });
+      }
+
+      // NEW: Landing Page Generation
+      if (action === 'generate_landing_page') {
+          const ancestry = getAncestryContext(nodeId);
+          handleUpdateNode(nodeId, { isLoading: true });
+          
+          // Use data from the creative and its ancestry
+          const story = ancestry.storyData || { narrative: "General Brand Story", emotionalTheme: "Trust" };
+          const bigIdea = ancestry.bigIdeaData || { headline: "New Opportunity", concept: "Better Way", targetBelief: "Old Way" };
+          const mechanism = ancestry.mechanismData || { scientificPseudo: "Smart Tech", ums: "Works Fast", ump: "Slow Results" };
+          const hook = node.adCopy?.headline || node.title;
+
+          const result = await GeminiService.generateSalesLetter(project, story, bigIdea, mechanism, hook);
+          handleUpdateNode(nodeId, { isLoading: false });
+          
+          if (result.data) {
+              addNode({
+                  id: uuidv4(),
+                  type: NodeType.LANDING_PAGE_NODE,
+                  title: "Sales Page / Advertorial",
+                  description: "Congruent Landing Page Draft",
+                  fullSalesLetter: result.data,
+                  x: node.x + 450,
+                  y: node.y,
+                  parentId: nodeId,
+                  outputTokens: result.outputTokens
+              }, nodeId);
+          }
       }
   };
 
@@ -354,41 +414,28 @@ const App: React.FC = () => {
       setIsFormatSelectorOpen(false);
       handleUpdateNode(pendingFormatParentId, { isLoading: true });
       
-      // FIX 1: CURE CONTEXT AMNESIA (Full Object Passing)
+      // FIX: Use Ancestry Context for Deep Nodes
+      const ancestry = getAncestryContext(pendingFormatParentId);
       const fullStrategyContext = {
-          ...(parentNode.meta || {}), // Contains persona, symptoms, etc.
-          storyData: parentNode.storyData,
-          bigIdeaData: parentNode.bigIdeaData,
-          mechanismData: parentNode.mechanismData,
-          hookData: parentNode.hookData,
-          hvcoData: parentNode.hvcoData,
-          massDesireData: parentNode.massDesireData // Include Mass Desire
+          ...ancestry,
+          // Ensure current node data overrides if exists
+          ...parentNode
       };
 
       const formatsToGen = Array.from(selectedFormats) as CreativeFormat[];
       let verticalOffset = 0;
 
-      // --- LOGIC FOR CONTEXT EXTRACTION (Simpler, Object-Based) ---
       let angleToUse = parentNode.title;
-      
-      if (parentNode.type === NodeType.ANGLE && parentNode.meta?.hook) {
-          angleToUse = parentNode.meta.hook;
-      } else if (parentNode.type === NodeType.HOOK_NODE && parentNode.hookData) {
-          angleToUse = parentNode.hookData;
-      } else if (parentNode.type === NodeType.BIG_IDEA_NODE && parentNode.bigIdeaData) {
-          angleToUse = `Show concept: ${parentNode.bigIdeaData.concept}`;
-      } else if (parentNode.type === NodeType.MECHANISM_NODE && parentNode.mechanismData) {
-          angleToUse = `Show the action of: ${parentNode.mechanismData.ums}`; 
-      } else if (parentNode.type === NodeType.HVCO_NODE && parentNode.hvcoData) {
-          angleToUse = parentNode.hvcoData.title;
-      } else if (parentNode.type === NodeType.STORY_NODE && parentNode.storyData) {
-          angleToUse = parentNode.storyData.title;
-      }
+      if (parentNode.type === NodeType.ANGLE && parentNode.meta?.hook) angleToUse = parentNode.meta.hook;
+      else if (parentNode.type === NodeType.HOOK_NODE && parentNode.hookData) angleToUse = parentNode.hookData;
+      else if (parentNode.type === NodeType.BIG_IDEA_NODE && parentNode.bigIdeaData) angleToUse = `Show concept: ${parentNode.bigIdeaData.concept}`;
+      else if (parentNode.type === NodeType.MECHANISM_NODE && parentNode.mechanismData) angleToUse = `Show the action of: ${parentNode.mechanismData.ums}`; 
+      else if (parentNode.type === NodeType.HVCO_NODE && parentNode.hvcoData) angleToUse = parentNode.hvcoData.title;
+      else if (parentNode.type === NodeType.STORY_NODE && parentNode.storyData) angleToUse = parentNode.storyData.title;
 
       for (const fmt of formatsToGen) {
           const isHVCO = parentNode.type === NodeType.HVCO_NODE;
 
-          // 1. Unified Strategy Generation (Concept + Copy + Overlay Text in ONE shot)
           const strategyRes = await GeminiService.generateCreativeStrategy(
               project, fullStrategyContext, angleToUse, fmt, isHVCO
           );
@@ -396,7 +443,6 @@ const App: React.FC = () => {
           if (strategyRes.data) {
               const strategy = strategyRes.data;
               
-              // 2. Visual Generation (Pass Full Context + EMBEDDED TEXT from Strategy)
               let imageUrl: string | null = null;
               let carouselImages: string[] = [];
               let imageTokens = 0;
@@ -405,12 +451,12 @@ const App: React.FC = () => {
               if (fmt.includes('Carousel')) {
                    const slidesRes = await GeminiService.generateCarouselSlides(
                        project, fmt, angleToUse, strategy.visualScene, strategy.visualStyle, fullStrategyContext,
-                       strategy.congruenceRationale // Pass rationale
+                       strategy.congruenceRationale
                    );
                    if (slidesRes.data && slidesRes.data.imageUrls.length > 0) {
                        imageUrl = slidesRes.data.imageUrls[0];
                        carouselImages = slidesRes.data.imageUrls;
-                       finalGenerationPrompt = slidesRes.data.prompts[0]; // Take first slide prompt as main
+                       finalGenerationPrompt = slidesRes.data.prompts[0];
                        imageTokens = slidesRes.inputTokens + slidesRes.outputTokens;
                    }
               } else {
@@ -422,9 +468,9 @@ const App: React.FC = () => {
                        strategy.visualScene, 
                        strategy.visualStyle, 
                        "1:1", 
-                       strategy.embeddedText, // NEW: Using the Strategy-Defined Text
+                       strategy.embeddedText,
                        undefined,
-                       strategy.congruenceRationale // Pass rationale
+                       strategy.congruenceRationale
                    );
                    imageUrl = imgRes.data.imageUrl;
                    finalGenerationPrompt = imgRes.data.finalPrompt;
@@ -444,9 +490,8 @@ const App: React.FC = () => {
                        primaryText: strategy.primaryText,
                        cta: strategy.cta
                    },
-                   // Store Strategy & Prompt data for Inspector
                    meta: { 
-                       ...parentNode.meta, 
+                       ...ancestry.meta, // Inherit ancestral meta
                        angle: angleToUse, 
                        concept: {
                            visualScene: strategy.visualScene,
@@ -457,11 +502,11 @@ const App: React.FC = () => {
                        }, 
                        finalGenerationPrompt 
                    },
-                   // Inherit megaprompt data if exists
-                   storyData: parentNode.storyData,
-                   bigIdeaData: parentNode.bigIdeaData,
-                   mechanismData: parentNode.mechanismData,
-                   massDesireData: parentNode.massDesireData,
+                   // Inherit context explicitly for Inspector
+                   storyData: ancestry.storyData,
+                   bigIdeaData: ancestry.bigIdeaData,
+                   mechanismData: ancestry.mechanismData,
+                   massDesireData: ancestry.massDesireData,
                    
                    x: parentNode.x + 450,
                    y: parentNode.y + verticalOffset,
@@ -481,7 +526,6 @@ const App: React.FC = () => {
 
   const handleRunSimulation = async () => {
       setSimulating(true);
-      // Simulate by predicting all leaf creatives in LAB
       const creatives = nodes.filter(n => n.type === NodeType.CREATIVE && n.stage !== CampaignStage.SCALING);
       
       for (const node of creatives) {
@@ -501,20 +545,16 @@ const App: React.FC = () => {
       if (!node || !node.meta?.concept) return;
       
       handleUpdateNode(id, { isLoading: true });
-      
       const concept = node.meta.concept;
       
-      const fullStrategyContext = {
-          ...(node.meta || {}),
-          storyData: node.storyData,
-          bigIdeaData: node.bigIdeaData,
-          mechanismData: node.mechanismData
-      };
+      // Use Ancestry here too for safety
+      const ancestry = getAncestryContext(id);
+      const fullStrategyContext = { ...ancestry, ...node };
       
       const imgRes = await GeminiService.generateCreativeImage(
            project, fullStrategyContext, node.meta.angle, node.format!, 
            concept.visualScene, concept.visualStyle, aspectRatio,
-           node.title, // Fallback: Use Headline as Embedded Text for regeneration
+           node.title,
            undefined, concept.congruenceRationale 
       );
       
@@ -526,7 +566,6 @@ const App: React.FC = () => {
   };
 
   const vaultNodes = nodes.filter(n => n.stage === CampaignStage.SCALING);
-  const labNodes = activeView === 'LAB' ? nodes : [];
 
   return (
     <div className="flex w-full h-screen bg-slate-50 font-sans text-slate-900">
@@ -574,7 +613,6 @@ const App: React.FC = () => {
                </div>
            )}
            
-           {/* Inspector Panel */}
            {inspectorNodeId && (
                <div className="absolute top-0 right-0 bottom-0 w-[450px] z-20">
                    <Inspector 
