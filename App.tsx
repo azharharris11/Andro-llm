@@ -95,8 +95,28 @@ const App: React.FC = () => {
   const [selectedFormats, setSelectedFormats] = useState<Set<CreativeFormat>>(new Set());
 
   const [simulating, setSimulating] = useState(false);
+  const [diversityScore, setDiversityScore] = useState(0);
 
   const canvasRef = useRef<CanvasHandle>(null);
+
+  // --- CALCULATE DIVERSITY SCORE ---
+  useEffect(() => {
+      let score = 0;
+      // Level 1: Multi-Format
+      const formats = new Set(nodes.filter(n => n.type === NodeType.CREATIVE).map(n => n.format));
+      if (formats.size >= 3) score += 1;
+      
+      // Level 2: Mass Desires
+      if (nodes.some(n => n.type === NodeType.MASS_DESIRE_NODE)) score += 1;
+      
+      // Level 3: Angles
+      if (nodes.filter(n => n.type === NodeType.ANGLE).length >= 3) score += 1;
+      
+      // Level 4: Personas
+      if (nodes.filter(n => n.type === NodeType.PERSONA).length >= 2) score += 1;
+      
+      setDiversityScore(score);
+  }, [nodes]);
 
   // --- ANCESTRY TRAVERSAL (SOLVES CONTEXT AMNESIA) ---
   const getAncestryContext = (startNodeId: string) => {
@@ -234,6 +254,7 @@ const App: React.FC = () => {
                        description: `${promo.testingTier}: ${promo.hook}`,
                        meta: { angle: promo.hook, ...promo },
                        testingTier: promo.testingTier,
+                       validationStatus: 'PENDING',
                        x: node.x + 400,
                        y: node.y + (i - 1) * 200,
                        parentId: nodeId
@@ -368,6 +389,11 @@ const App: React.FC = () => {
       }
 
       if (action === 'generate_creatives' || action === 'open_format_selector') {
+          // STRICT VALIDATION ENFORCEMENT
+          if (node.type === NodeType.ANGLE && node.validationStatus !== 'VALIDATED') {
+              alert("Wait! Strategy Rule: You must VALIDATE this Angle first (Click 'Validate Angle') before spending budget on creatives.");
+              return;
+          }
           setPendingFormatParentId(nodeId);
           setIsFormatSelectorOpen(true);
       }
@@ -498,7 +524,8 @@ const App: React.FC = () => {
                            visualStyle: strategy.visualStyle,
                            copyAngle: strategy.headline,
                            rationale: strategy.rationale,
-                           congruenceRationale: strategy.congruenceRationale
+                           congruenceRationale: strategy.congruenceRationale,
+                           uglyAdStructure: strategy.uglyAdStructure // SAVE UGLY FORMULA
                        }, 
                        finalGenerationPrompt 
                    },
@@ -578,6 +605,7 @@ const App: React.FC = () => {
             vaultNodesCount={vaultNodes.length}
             simulating={simulating}
             onRunSimulation={handleRunSimulation}
+            diversityScore={diversityScore}
         />
         
         <div className="flex-1 relative">

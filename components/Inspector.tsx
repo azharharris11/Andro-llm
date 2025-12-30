@@ -53,6 +53,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   // FIX: Prioritize the "Final Mega Prompt" if available
   const technicalPrompt = node.meta?.finalGenerationPrompt;
   const rationale = node.meta?.concept?.rationale;
+  const uglyAdStructure = node.meta?.concept?.uglyAdStructure; // Get Ugly Structure
   
   // STRATEGY DNA EXTRACTION
   const personaName = node.meta?.name || node.meta?.personaName || "General Audience";
@@ -290,6 +291,19 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                     </div>
 
                     <div className="space-y-4">
+                        {/* NEW: UGLY AD FORMULA BREAKDOWN */}
+                        {uglyAdStructure && (
+                            <div className="p-3 bg-rose-50 rounded-lg border border-rose-100 space-y-2">
+                                <div className="text-[10px] font-bold text-rose-700 uppercase flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Ugly Ad Formula</div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Keyword</span>{uglyAdStructure.keyword}</div>
+                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Emotion</span>{uglyAdStructure.emotion}</div>
+                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Qualifier</span>{uglyAdStructure.qualifier}</div>
+                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Outcome</span>{uglyAdStructure.outcome}</div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* A. IDENTITY MATRIX (Persona + Awareness) */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">

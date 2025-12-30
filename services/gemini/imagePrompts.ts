@@ -10,11 +10,11 @@ import { PromptContext } from "./imageUtils";
 const getAwarenessVisualLogic = (awareness: MarketAwareness): string => {
     switch (awareness) {
         case MarketAwareness.UNAWARE:
-            return "UNAWARE STAGE: DO NOT SHOW THE PRODUCT. Focus on a visual metaphor, an anomaly, a 'Glitch in the Matrix', or a shocking ugly visual. The goal is purely CURIOSITY. The user doesn't know they have a problem yet.";
+            return "UNAWARE STAGE (CRITICAL): DO NOT SHOW THE PRODUCT PACKAGING. I repeat: NO PRODUCT. The user doesn't know it exists. Focus 100% on a 'Visual Metaphor' for the problem, a 'Glitch in the Matrix', or a shocking anomaly that makes them stop scrolling. Curiosity is the ONLY goal.";
         case MarketAwareness.PROBLEM_AWARE:
-            return "PROBLEM AWARE STAGE: Focus on the SYMPTOM. Show the 'Visceral Pain'. A close-up of the body part hurting, or the messy room, or the frustration. Emphasize the 'Before' state.";
+            return "PROBLEM AWARE STAGE: Focus on the SYMPTOM. Show the 'Visceral Pain'. A close-up of the body part hurting, or the messy room, or the frustration. Emphasize the 'Before' state. Product can appear subtly as a saviour, but pain is the hero.";
         case MarketAwareness.SOLUTION_AWARE:
-            return "SOLUTION AWARE STAGE: Focus on the MECHANISM or COMPARISON. Show 'Us vs Them', a diagram, or a unique ingredient. Show WHY the old way failed.";
+            return "SOLUTION AWARE STAGE: Focus on the MECHANISM. Show 'Us vs Them', a diagram, an X-Ray of the effect, or a unique ingredient. Show WHY the old way failed and this new way works.";
         case MarketAwareness.PRODUCT_AWARE:
         case MarketAwareness.MOST_AWARE:
             return "PRODUCT AWARE STAGE: HERO SHOT. Show the product looking majestic. Focus on the OFFER, the bundle, or the unboxing experience.";
@@ -45,7 +45,7 @@ const getFormatVisualGuide = (format: CreativeFormat): string => {
         case CreativeFormat.BILLBOARD:
             return "Style: Realistic outdoor billboard on a highway or skyscraper. Cinematic lighting. Perception of scale and authority.";
         case CreativeFormat.UGLY_VISUAL:
-            return "Style: The Ugly Ad Blueprint. Low-res collage, mismatched fonts, 'disturbing' or shocking visual metaphors to break banner blindness. Amateur aesthetic.";
+            return "Style: The Ugly Ad Blueprint. Low-res collage, mismatched fonts, 'disturbing' or shocking visual metaphors to break banner blindness. Amateur aesthetic. Thoughtful but NOT pretty.";
         case CreativeFormat.MS_PAINT:
             return "Style: Crude MS Paint drawings. Amateur brush strokes, neon colors. Intentionally lo-fi to trigger curiosity and pattern interrupt.";
         case CreativeFormat.REDDIT_THREAD:
@@ -153,7 +153,7 @@ export const generateAIWrittenPrompt = async (ctx: PromptContext): Promise<strin
 
     let styleInstruction = "Style: Professional Ad.";
     if (isNativeStory) {
-        styleInstruction = "Style: AMATEUR UGC. No professional lighting. Camera shake/grain allowed. Looks like a friend sent it.";
+        styleInstruction = "Style: AMATEUR UGC. No professional lighting. Camera shake/grain allowed. Looks like a friend sent it. 'Authenticity Bias'.";
     } else if (isHardSell) {
         styleInstruction = "Style: HARD HITTING DIRECT RESPONSE. High contrast, grit, and urgency.";
     }
@@ -175,7 +175,7 @@ export const generateAIWrittenPrompt = async (ctx: PromptContext): Promise<strin
             textToRender: embeddedText, // CRITICAL FOR ONE-SHOT
             specificAction: visualScene, // Adegan dari Creative Director
             visualMood: visualStyle,     // Gaya dari Creative Director
-            congruenceGoal: congruenceRationale
+            congruenceGoal: congruenceRationale // FIX: Now correctly destructured and used
         },
         execution: {
             format: format,
@@ -196,10 +196,10 @@ export const generateAIWrittenPrompt = async (ctx: PromptContext): Promise<strin
     --- DIRECTIVES ---
     1. CORE COMPOSITION: Execute the scene "${visualScene}" precisely. 
     2. VISUAL DNA: Strictly follow the style "${visualStyle}" and format rule: "${getFormatVisualGuide(format)}".
-    3. MARKET AWARENESS RULE: ${awarenessLogic} (This is CRITICAL).
-    4. NO STOCK LOOK: ${styleInstruction}. Avoid smooth, generic AI lighting.
+    3. MARKET AWARENESS RULE: ${awarenessLogic} (This is CRITICAL - Do not show product if UNAWARE).
+    4. NO STOCK LOOK: ${styleInstruction}. Avoid smooth, generic AI lighting. Make it "Thoughtful but not pretty".
     5. TEXT RENDERING: The image MUST include the text "${embeddedText}" clearly visible in the scene (e.g., on the screen, sign, or overlay).
-    6. CONGRUENCE: The visual must prove the text.
+    6. CONGRUENCE: The visual must prove the text. "${congruenceRationale || 'Visual evidence of the claim'}".
     
     --- TECHNICAL PARAMETERS ---
     - Style Enhancer: ${enhancer}

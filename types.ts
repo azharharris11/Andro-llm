@@ -194,6 +194,13 @@ export interface MassDesireOption {
   marketSymptom: string; // "What are they searching/complaining about?"
 }
 
+export interface UglyAdStructure {
+    keyword: string;
+    emotion: string;
+    qualifier: string;
+    outcome: string;
+}
+
 export interface NodeData {
   id: string;
   type: NodeType;
@@ -297,6 +304,7 @@ export interface CreativeStrategyResult {
   cta: string;
   rationale: string;
   congruenceRationale: string;
+  uglyAdStructure?: UglyAdStructure; // NEW: The 4-part Formula
 }
 
 export interface GenResult<T> {

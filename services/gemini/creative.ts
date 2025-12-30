@@ -9,7 +9,9 @@ import {
   BigIdeaOption, 
   MechanismOption, 
   LanguageRegister, 
-  StrategyMode 
+  StrategyMode,
+  MarketAwareness,
+  UglyAdStructure
 } from "../../types";
 import { ai, extractJSON, generateWithRetry } from "./client";
 
@@ -22,12 +24,35 @@ export const generateSalesLetter = async (
 ): Promise<GenResult<string>> => {
   const model = "gemini-3-flash-preview";
   const country = project.targetCountry || "Indonesia";
+  const awareness = project.marketAwareness || MarketAwareness.PROBLEM_AWARE;
   
+  let structureInstruction = "";
+  if (awareness === MarketAwareness.UNAWARE) {
+      structureInstruction = `
+      **STRUCTURE: INDIRECT STORY LEAD (Unaware)**
+      1. START with the STORY/PAIN. Do NOT mention the product or offer.
+      2. Agitate the problem and the failed solutions (Mechanism of the Problem).
+      3. Introduce the "Shift" (Big Idea).
+      4. ONLY THEN introduce the solution (Product) as the new way.
+      5. Tone: "I found this weird thing...", "Confession time...".
+      `;
+  } else {
+      structureInstruction = `
+      **STRUCTURE: DIRECT RESPONSE LEAD**
+      1. HOOK with the Big Promise or Big Problem immediately.
+      2. Introduce the Mechanism (The "Why it works").
+      3. Stack the benefits.
+      4. Clear Offer.
+      `;
+  }
+
   const prompt = `
     ROLE: Direct Response Copywriter (Long Form / Advertorial Specialist).
     TARGET COUNTRY: ${country}. 
     
     TASK: Write a high-converting Sales Letter (long-form Facebook Ad) in the NATIVE language of ${country}.
+    
+    ${structureInstruction}
     
     STRATEGY STACK (MUST CONNECT ALL DOTS):
     1. HOOK: "${hook}" (The attention grabber).
@@ -135,6 +160,12 @@ export const generateCreativeStrategy = async (
     - **80% MESSAGING:** The primary goal is to communicate the ANGLE ("${angle}"). The visual is just a vehicle for this message.
     - **20% CONCEPT:** The format (${format}) is just the wrapper. Don't let the "art" distract from the "offer".
     
+    **UGLY AD FORMULA (If format allows):**
+    - Identify the Keyword (e.g. location/problem).
+    - Identify the Key Emotion.
+    - Identify the Qualifier (Who is this for?).
+    - Identify the Outcome.
+    
     **STRATEGIC GUIDELINES:**
     ${strategyInstruction}
     ${formatInstruction}
@@ -157,6 +188,7 @@ export const generateCreativeStrategy = async (
     - cta: Button text (e.g. Shop Now).
     - rationale: Why this combination hooks the persona.
     - congruenceRationale: How the image visually proves the text claim.
+    - uglyAdStructure: { keyword, emotion, qualifier, outcome } (Fill this based on the logic used).
   `;
 
   try {
@@ -176,9 +208,19 @@ export const generateCreativeStrategy = async (
             headline: { type: Type.STRING },
             cta: { type: Type.STRING },
             rationale: { type: Type.STRING },
-            congruenceRationale: { type: Type.STRING }
+            congruenceRationale: { type: Type.STRING },
+            uglyAdStructure: {
+                type: Type.OBJECT,
+                properties: {
+                    keyword: { type: Type.STRING },
+                    emotion: { type: Type.STRING },
+                    qualifier: { type: Type.STRING },
+                    outcome: { type: Type.STRING }
+                },
+                required: ["keyword", "emotion", "qualifier", "outcome"]
+            }
           },
-          required: ["visualScene", "visualStyle", "embeddedText", "primaryText", "headline", "cta", "rationale"]
+          required: ["visualScene", "visualStyle", "embeddedText", "primaryText", "headline", "cta", "rationale", "uglyAdStructure"]
         }
       }
     });
