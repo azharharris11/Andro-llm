@@ -33,8 +33,8 @@ export const generateSalesLetter = async (
       1. START with the STORY/PAIN. Do NOT mention the product or offer.
       2. Agitate the problem and the failed solutions (Mechanism of the Problem).
       3. Introduce the "Shift" (Big Idea).
-      4. ONLY THEN introduce the solution (Product) as the new way.
-      5. Tone: "I found this weird thing...", "Confession time...".
+      4. ONLY THEN introduce the solution (Product) as the new way at the very end.
+      5. Tone: "I found this weird thing...", "Confession time...", "I was about to give up...".
       `;
   } else {
       structureInstruction = `
@@ -135,6 +135,19 @@ export const generateCreativeStrategy = async (
   if (format === CreativeFormat.TWITTER_REPOST) formatInstruction = "Visual must look like a Tweet. Embedded Text is the 'Tweet Content'.";
   if (format === CreativeFormat.REMINDER_NOTIF) formatInstruction = "Visual must look like a Lockscreen Notification. Embedded Text is the notification message.";
   if (format === CreativeFormat.BILLBOARD) formatInstruction = "Visual is a billboard. Embedded Text is the billboard slogan.";
+  
+  // --- UGLY AD FORMULA INJECTION ---
+  if (format === CreativeFormat.UGLY_VISUAL || format === CreativeFormat.STICKY_NOTE_REALISM) {
+      formatInstruction += `
+      **UGLY AD FORMULA (STRICT):**
+      The 'Embedded Text' MUST be constructed using these 4 elements:
+      1. Keyword (e.g. "Attention [City]" or "Struggling with [Problem]")
+      2. Key Emotion (e.g. "I felt so ashamed", "Finally")
+      3. Qualifier (e.g. "For busy moms only")
+      4. Outcome (e.g. "Sleep in 5 mins")
+      combine these into a single punchy sticky-note style text.
+      `;
+  }
 
   const prompt = `
     # ROLE: World-Class Creative Strategist (Meta & TikTok Ads)
@@ -159,12 +172,6 @@ export const generateCreativeStrategy = async (
     **THE 80/20 RULE (CRITICAL):**
     - **80% MESSAGING:** The primary goal is to communicate the ANGLE ("${angle}"). The visual is just a vehicle for this message.
     - **20% CONCEPT:** The format (${format}) is just the wrapper. Don't let the "art" distract from the "offer".
-    
-    **UGLY AD FORMULA (If format allows):**
-    - Identify the Keyword (e.g. location/problem).
-    - Identify the Key Emotion.
-    - Identify the Qualifier (Who is this for?).
-    - Identify the Outcome.
     
     **STRATEGIC GUIDELINES:**
     ${strategyInstruction}

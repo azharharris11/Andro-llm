@@ -270,6 +270,7 @@ export const generateHooks = async (
     1. ${canRevealProduct ? 'Boleh sebut nama produk: ' + project.productName : 'JANGAN sebut nama produk. Gunakan: "Trik ini", "Rahasia ini", "Satu hal ini".'}
     2. Hook harus "Punchy" (Singkat dan nendang).
     3. Fokus pada "Hasil Nyata" atau "Keresahan Terbesar".
+    4. **VOC RULE**: MUST use "Coliseum Keywords" (Insider slang or verbatim words used by the tribe). e.g. "Pejuang Garis Dua" instead of "Women trying to conceive".
 
     ${langInstruction}
     Output 10 hooks dalam bentuk JSON string array.

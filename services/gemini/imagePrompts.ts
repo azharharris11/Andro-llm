@@ -10,14 +10,14 @@ import { PromptContext } from "./imageUtils";
 const getAwarenessVisualLogic = (awareness: MarketAwareness): string => {
     switch (awareness) {
         case MarketAwareness.UNAWARE:
-            return "UNAWARE STAGE (CRITICAL): DO NOT SHOW THE PRODUCT PACKAGING. I repeat: NO PRODUCT. The user doesn't know it exists. Focus 100% on a 'Visual Metaphor' for the problem, a 'Glitch in the Matrix', or a shocking anomaly that makes them stop scrolling. Curiosity is the ONLY goal.";
+            return "UNAWARE STAGE (CRITICAL): DO NOT SHOW THE PRODUCT PACKAGING. I repeat: NO PRODUCT. The user doesn't know it exists. Focus 100% on a 'Visual Metaphor' (e.g., a melting clock for lost time), an 'Anomaly' (something that looks 'wrong' or 'glitched'), or a shocking specific symptom. The goal is purely CURIOSITY and PATTERN INTERRUPT.";
         case MarketAwareness.PROBLEM_AWARE:
             return "PROBLEM AWARE STAGE: Focus on the SYMPTOM. Show the 'Visceral Pain'. A close-up of the body part hurting, or the messy room, or the frustration. Emphasize the 'Before' state. Product can appear subtly as a saviour, but pain is the hero.";
         case MarketAwareness.SOLUTION_AWARE:
             return "SOLUTION AWARE STAGE: Focus on the MECHANISM. Show 'Us vs Them', a diagram, an X-Ray of the effect, or a unique ingredient. Show WHY the old way failed and this new way works.";
         case MarketAwareness.PRODUCT_AWARE:
         case MarketAwareness.MOST_AWARE:
-            return "PRODUCT AWARE STAGE: HERO SHOT. Show the product looking majestic. Focus on the OFFER, the bundle, or the unboxing experience.";
+            return "MOST AWARE STAGE: HERO SHOT & MAFIA OFFER. Show the product looking majestic with a 'Value Stack' visualization (e.g., product + bonuses + guarantee badge). High contrast, professional, 'Ready to Ship' vibe. Focus on the OFFER and SCARCITY.";
         default:
             return "General Direct Response Visual.";
     }
@@ -45,7 +45,7 @@ const getFormatVisualGuide = (format: CreativeFormat): string => {
         case CreativeFormat.BILLBOARD:
             return "Style: Realistic outdoor billboard on a highway or skyscraper. Cinematic lighting. Perception of scale and authority.";
         case CreativeFormat.UGLY_VISUAL:
-            return "Style: The Ugly Ad Blueprint. Low-res collage, mismatched fonts, 'disturbing' or shocking visual metaphors to break banner blindness. Amateur aesthetic. Thoughtful but NOT pretty.";
+            return "Style: THE UGLY AD BLUEPRINT. Intentionally 'Amateur' and 'Low-Fi'. Use clashing colors, MS Paint arrows, or low-res collage. DO NOT make it look pretty. It must look like a 'mistake' or a raw meme to break banner blindness.";
         case CreativeFormat.MS_PAINT:
             return "Style: Crude MS Paint drawings. Amateur brush strokes, neon colors. Intentionally lo-fi to trigger curiosity and pattern interrupt.";
         case CreativeFormat.REDDIT_THREAD:
