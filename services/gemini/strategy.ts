@@ -106,10 +106,10 @@ export const generateMafiaOffer = async (project: ProjectContext): Promise<GenRe
     DESC: ${project.productDescription}
     
     FORMULA:
-    1. BOLD PROMISE: Hasil nyata dalam waktu tertentu.
-    2. VALUE STACK: Bonus yang menjawab keberatan (e.g., Free Guide, Support).
-    3. RISK REVERSAL: Garansi gila (e.g., Gak suka? Uang kembali + Bonus buat Anda).
-    4. SCARCITY: Alasan kenapa harus sekarang.
+    1. BOLD PROMISE: Hasil nyata dalam waktu tertentu (e.g. "Double your traffic in 30 days").
+    2. VALUE STACK: 3-5 Bonuses that kill objections (e.g. Free Setup, Checklists, Scripts).
+    3. RISK REVERSAL: The "Insane" Guarantee (e.g. "I'll pay you $100 if you don't like it").
+    4. SCARCITY: Alasan kenapa harus sekarang (e.g. "Only 5 spots left").
     
     ${langInstruction}
     **OUTPUT JSON:** headline, valueStack (array), riskReversal, scarcity.
@@ -255,22 +255,43 @@ export const generateHooks = async (
   const langInstruction = getLanguageInstruction(project.targetCountry || "Indonesia", project.languageRegister || LanguageRegister.CASUAL);
   
   const canRevealProduct = strategyMode === StrategyMode.HARD_SELL;
+  const awareness = project.marketAwareness || MarketAwareness.PROBLEM_AWARE;
+
+  let hookInstruction = "";
+  if (awareness === MarketAwareness.UNAWARE) {
+      hookInstruction = `
+      **UNAWARE STAGE HOOKS (CRITICAL):**
+      You MUST NOT mention the solution or the product.
+      Focus strictly on:
+      1. **Behaviors:** "The specific weird thing you do..." (e.g. "The sound Max makes at 2am")
+      2. **Experiences:** "The moment you realize..."
+      3. **Emotions:** "The shame I felt when..."
+      Target the *symptom* or the *situation*, not the cure.
+      `;
+  } else {
+      hookInstruction = `
+      **DIRECT RESPONSE HOOKS:**
+      Focus on the Mechanism, the Benefit, or the Offer.
+      ${canRevealProduct ? 'Boleh sebut nama produk: ' + project.productName : 'JANGAN sebut nama produk. Gunakan: "Trik ini", "Rahasia ini", "Satu hal ini".'}
+      `;
+  }
 
   const prompt = `
     ROLE: Media Buyer & Viral Hook Writer.
-    TASK: Buat Headline/Hook Meta Ads yang bikin orang berhenti scrolling.
+    TASK: Buat 10 Headline/Hook Meta Ads.
 
     CONTEXT:
     Story: ${story.narrative}
     UMP: ${mechanism.ump}
     UMS: ${mechanism.ums}
     Mode: ${strategyMode}
+    
+    ${hookInstruction}
 
-    RULES:
-    1. ${canRevealProduct ? 'Boleh sebut nama produk: ' + project.productName : 'JANGAN sebut nama produk. Gunakan: "Trik ini", "Rahasia ini", "Satu hal ini".'}
-    2. Hook harus "Punchy" (Singkat dan nendang).
-    3. Fokus pada "Hasil Nyata" atau "Keresahan Terbesar".
-    4. **VOC RULE**: MUST use "Coliseum Keywords" (Insider slang or verbatim words used by the tribe). e.g. "Pejuang Garis Dua" instead of "Women trying to conceive".
+    GENERAL RULES:
+    1. Hook harus "Punchy" (Singkat dan nendang).
+    2. Fokus pada "Hasil Nyata" atau "Keresahan Terbesar".
+    3. **VOC RULE**: MUST use "Coliseum Keywords" (Insider slang or verbatim words used by the tribe). e.g. "Pejuang Garis Dua" instead of "Women trying to conceive".
 
     ${langInstruction}
     Output 10 hooks dalam bentuk JSON string array.

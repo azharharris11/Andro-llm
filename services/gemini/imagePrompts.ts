@@ -45,7 +45,7 @@ const getFormatVisualGuide = (format: CreativeFormat): string => {
         case CreativeFormat.BILLBOARD:
             return "Style: Realistic outdoor billboard on a highway or skyscraper. Cinematic lighting. Perception of scale and authority.";
         case CreativeFormat.UGLY_VISUAL:
-            return "Style: THE UGLY AD BLUEPRINT. Intentionally 'Amateur' and 'Low-Fi'. Use clashing colors, MS Paint arrows, or low-res collage. DO NOT make it look pretty. It must look like a 'mistake' or a raw meme to break banner blindness.";
+            return "Style: THE UGLY AD BLUEPRINT. Intentionally 'Amateur' and 'Anti-Design'. Use clashing colors (e.g. Yellow background, Red text), MS Paint arrows, or low-res collage. DO NOT make it look pretty. It must look like a 'mistake' or a raw meme to break banner blindness.";
         case CreativeFormat.MS_PAINT:
             return "Style: Crude MS Paint drawings. Amateur brush strokes, neon colors. Intentionally lo-fi to trigger curiosity and pattern interrupt.";
         case CreativeFormat.REDDIT_THREAD:
@@ -175,7 +175,7 @@ export const generateAIWrittenPrompt = async (ctx: PromptContext): Promise<strin
             textToRender: embeddedText, // CRITICAL FOR ONE-SHOT
             specificAction: visualScene, // Adegan dari Creative Director
             visualMood: visualStyle,     // Gaya dari Creative Director
-            congruenceGoal: congruenceRationale // FIX: Now correctly destructured and used
+            congruenceRationale: congruenceRationale || "Prove the claim"
         },
         execution: {
             format: format,

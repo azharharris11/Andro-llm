@@ -29,20 +29,36 @@ export const generateSalesLetter = async (
   let structureInstruction = "";
   if (awareness === MarketAwareness.UNAWARE) {
       structureInstruction = `
-      **STRUCTURE: INDIRECT STORY LEAD (Unaware)**
-      1. START with the STORY/PAIN. Do NOT mention the product or offer.
-      2. Agitate the problem and the failed solutions (Mechanism of the Problem).
-      3. Introduce the "Shift" (Big Idea).
-      4. ONLY THEN introduce the solution (Product) as the new way at the very end.
-      5. Tone: "I found this weird thing...", "Confession time...", "I was about to give up...".
+      **FRAMEWORK: 8-STEP INDIRECT STORY LEAD (Andromeda Standard for UNAWARE)**
+      
+      1. ** The Hook (Behavior/Emotion):** Start with a specific behavior or feeling (e.g., "The sound Max makes at 2 AM"). NO PRODUCT MENTION.
+      2. ** Instant Identity:** Call out who this is for indirectly (e.g., "If you're a light sleeper...").
+      3. ** Amplify Emotion:** Twist the knife. Describe the visceral pain/shame/frustration.
+      4. ** The Real Problem (UMP):** Reveal the *real* enemy (The Mechanism of the Problem). Why other solutions failed.
+      5. ** The New Mechanism (UMS):** Introduce the new concept/shift (Big Idea). Still no product name.
+      6. ** The Discovery:** How was this found? (The "Epiphany" moment).
+      7. ** The Transformation:** What life looks like now.
+      8. ** The Offer/CTA:** ONLY NOW introduce ${project.productName} and the offer.
+      
+      TONE: Confessional, vulnerable, "I found this weird thing...".
+      `;
+  } else if (awareness === MarketAwareness.PROBLEM_AWARE) {
+      structureInstruction = `
+      **FRAMEWORK: PAS (Problem - Agitate - Solution)**
+      1. Call out the Pain/Symptom immediately.
+      2. Agitate: "It gets worse if ignored..."
+      3. Introduce the Mechanism (Why it happens).
+      4. Introduce the Solution (${project.productName}).
+      5. Social Proof & Offer.
       `;
   } else {
       structureInstruction = `
-      **STRUCTURE: DIRECT RESPONSE LEAD**
-      1. HOOK with the Big Promise or Big Problem immediately.
-      2. Introduce the Mechanism (The "Why it works").
-      3. Stack the benefits.
-      4. Clear Offer.
+      **FRAMEWORK: DIRECT RESPONSE OFFER (Mafia Style)**
+      1. BOLD PROMISE: What result in what timeframe?
+      2. THE MECHANISM: Why it works (Scientific/Logical proof).
+      3. VALUE STACK: Everything they get.
+      4. RISK REVERSAL: The "Insane" Guarantee.
+      5. SCARCITY: Why buy now?
       `;
   }
 
@@ -64,8 +80,7 @@ export const generateSalesLetter = async (
     PRODUCT DETAILS:
     ${project.productDescription}
     
-    TONE: Persuasive, storytelling-based, logical yet emotional.
-    FORMAT: Markdown. Paragraphs: 1-2 sentences max. Use bolding for emphasis on core benefits.
+    FORMAT: Markdown. Short paragraphs (1-2 sentences). Use bolding for emphasis on core benefits.
   `;
 
   const response = await generateWithRetry({
@@ -137,15 +152,17 @@ export const generateCreativeStrategy = async (
   if (format === CreativeFormat.BILLBOARD) formatInstruction = "Visual is a billboard. Embedded Text is the billboard slogan.";
   
   // --- UGLY AD FORMULA INJECTION ---
-  if (format === CreativeFormat.UGLY_VISUAL || format === CreativeFormat.STICKY_NOTE_REALISM) {
+  if (format === CreativeFormat.UGLY_VISUAL || format === CreativeFormat.STICKY_NOTE_REALISM || format === CreativeFormat.MS_PAINT) {
       formatInstruction += `
-      **UGLY AD FORMULA (STRICT):**
-      The 'Embedded Text' MUST be constructed using these 4 elements:
-      1. Keyword (e.g. "Attention [City]" or "Struggling with [Problem]")
-      2. Key Emotion (e.g. "I felt so ashamed", "Finally")
-      3. Qualifier (e.g. "For busy moms only")
-      4. Outcome (e.g. "Sleep in 5 mins")
-      combine these into a single punchy sticky-note style text.
+      **UGLY AD FORMULA (STRICT REQUIREMENT):**
+      This format requires the 'Embedded Text' to be constructed using these 4 specific elements:
+      1. **Keyword:** A specific trigger word (e.g. "Jakarta Residents" or "Back Pain").
+      2. **Emotion:** The core feeling (e.g. "I felt ashamed", "Finally").
+      3. **Qualifier:** Who is this for? (e.g. "For busy moms only").
+      4. **Outcome:** The result (e.g. "Sleep in 5 mins").
+      
+      Combine these into a single punchy, amateur-looking text overlay. 
+      Example: "Jakarta Moms: Stop feeling guilty about dinner. Cook in 5 mins."
       `;
   }
 
@@ -195,7 +212,7 @@ export const generateCreativeStrategy = async (
     - cta: Button text (e.g. Shop Now).
     - rationale: Why this combination hooks the persona.
     - congruenceRationale: How the image visually proves the text claim.
-    - uglyAdStructure: { keyword, emotion, qualifier, outcome } (Fill this based on the logic used).
+    - uglyAdStructure: { keyword, emotion, qualifier, outcome } (MANDATORY for Ugly Ads, else empty strings).
   `;
 
   try {
