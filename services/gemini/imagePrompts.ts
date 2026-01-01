@@ -25,106 +25,105 @@ const getAwarenessVisualLogic = (awareness: MarketAwareness): string => {
 
 const getFormatVisualGuide = (format: CreativeFormat): string => {
     switch (format) {
-        // --- CAROUSEL SPECIALS (NARRATIVE & DATA FLOW) ---
-        case CreativeFormat.CAROUSEL_EDUCATIONAL:
-            return "Style: High-value Slide Deck. Bold headlines, flat vector icons, clean grid. Educational vibe. Focus on 'How-to' content.";
-        case CreativeFormat.CAROUSEL_TESTIMONIAL:
-            return "Style: Testimonial Pile. A stack of review cards with 5-star ratings overlaid on a high-end product shot. Social proof overload.";
-        case CreativeFormat.CAROUSEL_PANORAMA:
-            return "Style: Seamless 9:16 or 1:1 wide image split across slides. Visual continuity that forces swiping interaction.";
-        case CreativeFormat.CAROUSEL_PHOTO_DUMP:
-            return "Style: Raw, unedited 'Weekend Dump' vibe. Flash photography, candid shots, imperfect framing. Looks like a friend's post.";
-        case CreativeFormat.CAROUSEL_REAL_STORY:
-            return "Style: UGC Journey. A mix of raw selfies and 'day in the life' frames. Very high authenticity, zero studio feel.";
-
-        // --- PATTERN INTERRUPT (BREAKING THE FEED) ---
-        case CreativeFormat.BIG_FONT:
-            return "Style: Massive, aggressive typography filling 80% of the frame. High contrast (e.g., Neon Green on Black). Text IS the visual hook.";
-        case CreativeFormat.GMAIL_UX:
-            return "Style: Gmail Inbox Interface. MUST have: White background, Standard Google font, Star icon (yellow), 'Inbox' label, Subject line in bold.";
-        case CreativeFormat.BILLBOARD:
-            return "Style: Realistic outdoor billboard on a highway or skyscraper. Cinematic lighting. Perception of scale and authority.";
-        case CreativeFormat.UGLY_VISUAL:
-            return "Style: THE UGLY AD BLUEPRINT. Intentionally 'Amateur' and 'Anti-Design'. Use clashing colors (e.g. Yellow background, Red text), MS Paint arrows, or low-res collage. DO NOT make it look pretty. It must look like a 'mistake' or a raw meme to break banner blindness.";
-        case CreativeFormat.MS_PAINT:
-            return "Style: Crude MS Paint drawings. Amateur brush strokes, neon colors. Intentionally lo-fi to trigger curiosity and pattern interrupt.";
-        case CreativeFormat.REDDIT_THREAD:
-            return "Style: Reddit Discussion UI. Dark Mode. MUST have: Upvote/Downvote arrows (orange/blue), u/username, 'Join' button, Award icons. Vibe: 'The community found a secret'.";
-        case CreativeFormat.MEME:
-            return "Style: Classic meme format. Impact font with black borders or X/Twitter style caption over a relatable, funny image.";
-        case CreativeFormat.LONG_TEXT:
-            return "Style: Native Mini Sales Letter. Off-white background, clean serif typography (Kindle/Article style). Zero visual distractions.";
-        case CreativeFormat.CARTOON:
-            return "Style: Hand-drawn editorial cartoon or comic strip. Expressive characters illustrating a relatable pain point.";
-        case CreativeFormat.BEFORE_AFTER:
-            return "Style: Visceral Transformation split-screen. Left: Gritty/Problem. Right: Vibrant/Solution. Clear, hard division line.";
-        case CreativeFormat.WHITEBOARD:
-            return "Style: Educational drawing on a real whiteboard. Marker texture, hand visible drawing a diagram. Authority/Teacher vibe.";
-        case CreativeFormat.EDUCATIONAL_RANT:
-            return "Style: Green Screen effect. A person talking over a news article, research paper, or a graph. High information density.";
-        case CreativeFormat.OLD_ME_VS_NEW_ME:
-            return "Style: Split screen comparing body language or skin. Sad/Slouching vs Confident/Glowing. Emotional transformation.";
-        case CreativeFormat.PRESS_FEATURE:
-            return "Style: Featured article layout (Forbes/Vogue style). Large headline, sub-headline, and a professional hero image. Institutional trust.";
-        case CreativeFormat.LEAD_MAGNET_3D:
-            return "Style: Sabri Suby Style. High-quality 3D render of a physical book or report floating with depth shadows. tangible value.";
-        case CreativeFormat.MECHANISM_XRAY:
-            return "Style: Scientific visualization. X-Ray or 3D cross-section showing molecules or 'inside the body' action. Unique Mechanism proof.";
-
         // --- NATIVE / SOCIAL (UX FAMILIARITY BIAS) ---
+        
         case CreativeFormat.IG_STORY_TEXT:
-            return "Style: 100% Native IG Story. Font: Typewriter. Background: Blurry candid photo. Must look like a real user story.";
-        case CreativeFormat.TWITTER_REPOST:
-            return "Style: X/Twitter Post screenshot. Sharp UI. MUST have: Profile pic, Handle (@name), Retweet/Like icons, Time stamp. High authority.";
+            return "Style: NATIVE IG STORY TEXT STACK. Vertical 9:16. The background is a blurry/dimmed lifestyle photo (candid). FOREGROUND: Multiple distinct text bubbles (White background blocks with Black text) stacked vertically in the center. The text is long, narrative, and tells a story. Look like a real user 'curhat' (venting) session.";
+            
         case CreativeFormat.PHONE_NOTES:
-            return "Style: Apple Notes UI. Dark mode or yellow paper. MUST have: Back arrow '< Notes', Date stamp, Digital scribbles/circles in marker.";
+            return "Style: APPLE NOTES UI REALISM. The image must look EXACTLY like a screenshot of the iPhone Notes app. Paper texture background (off-white or yellow). Top UI bar visible ('< Notes' and 'Share' icon). The text is typed in the default San Francisco font. Add some hand-drawn red circles or underlines for emphasis.";
+            
+        case CreativeFormat.TWITTER_REPOST:
+            return "Style: X/TWITTER POST SCREENSHOT. Sharp, high-res UI. White or Dark mode background. Must include: Circular Profile Picture, Username, Handle (@name), The Tweet Body Text, and the bottom action bar (Reply, Retweet, Like, Share icons). Make it look embedded in a feed.";
+            
+        case CreativeFormat.HANDHELD_TWEET:
+             return "Style: POV PHOTO OF PHONE. A realistic first-person shot of a hand holding an iPhone. The screen is displaying a viral Tweet/Post. The background is a blurry coffee shop or street (bokeh). Focus is sharp on the phone screen text.";
+             
+        case CreativeFormat.GMAIL_UX:
+            return "Style: GMAIL INBOX UI. A clean white interface. List of emails. The 'Target' email is highlighted or at the top. BOLD subject line. Star icon is yellow. Must look like a screenshot of a browser or mobile app inbox.";
+
+        case CreativeFormat.DM_NOTIFICATION:
+        case CreativeFormat.REMINDER_NOTIF:
+            return "Style: IPHONE LOCKSCREEN NOTIFICATIONS. Background is a dimmed personal wallpaper. Foreground: A stack of 2-3 glassy notification bubbles (Glassmorphism). App icons (Green for Messages, Blue for Calendar) visible on the left of the bubble. Text is sharp black on translucent white.";
+
+        case CreativeFormat.CHAT_CONVERSATION:
+            return "Style: IMESSAGE/WHATSAPP SCREEN. Vertical layout. Chat bubbles. Incoming messages (Grey/White) on left. Outgoing messages (Blue/Green) on right. 'Read 10:41 AM' small text at bottom. Background is default chat wallpaper. Looks like a leaked private conversation.";
+
+        case CreativeFormat.SOCIAL_COMMENT_STACK:
+            return "Style: FLOATING COMMENT BUBBLES. A high-quality product or lifestyle shot in the background. OVERLAID: 3-4 distinct social media comment bubbles with profile pics. They are floating/stacked on top of the product to show social proof.";
+
+        case CreativeFormat.SEARCH_BAR:
+            return "Style: GOOGLE SEARCH HOMEPAGE. Clean white background. The Google logo (multi-colored) above. A search bar in the center with the query typed in. A blinking cursor '|' at the end of the text. Minimalist and spacious.";
+
+        // --- DATA & LOGIC (THE PROOF) ---
+        
+        case CreativeFormat.US_VS_THEM:
+            return "Style: SPLIT COMPARISON TABLE. Divide the image vertically. Left Side (Them): Desaturated, grey/red tones, 'X' icons, sad vibe. Right Side (Us): Vibrant, brand colors, Green Checkmark icons, happy vibe. Clear headers at top.";
+
+        case CreativeFormat.BEFORE_AFTER:
+        case CreativeFormat.OLD_ME_VS_NEW_ME:
+            return "Style: VISCERAL SPLIT SCREEN. A sharp vertical division line. Left: Darker lighting, messy, problem visible, sad posture. Right: Bright lighting, clean, solution visible, glowing posture. The contrast must be immediate.";
+            
+        case CreativeFormat.GRAPH_CHART:
+            return "Style: DATA VISUALIZATION. A clean upward-trending line graph or bar chart. The line is Green. The background is white or light grid. A red circle highlights the 'Breakthrough' point on the graph. It looks like a financial or health report.";
+            
+        case CreativeFormat.MECHANISM_XRAY:
+            return "Style: 3D X-RAY / CROSS-SECTION. A scientific visualization. Show the inside of the product or the human body. Glowing particles, layers revealed. High-tech, medical, or engineering aesthetic. Prove 'How it works'.";
+            
+        case CreativeFormat.ANNOTATED_PRODUCT:
+        case CreativeFormat.BENEFIT_POINTERS:
+            return "Style: PRODUCT ANATOMY. High-res hero shot of the product in center. Thin, elegant leader lines radiating out to specific parts. At the end of each line is a small text label. Clean studio lighting.";
+
+        case CreativeFormat.TESTIMONIAL_HIGHLIGHT:
+            return "Style: HIGHLIGHTED DOCUMENT. A close-up photo of a printed page or a screen showing a text review. A bright NEON YELLOW highlighter marker has drawn a line over the most important sentence. Depth of field blurs the edges.";
+            
+        case CreativeFormat.VENN_DIAGRAM:
+            return "Style: VENN DIAGRAM. Two or three overlapping circles with distinct translucent colors. The center intersection is bright and glowing. Text labels floating in each section. Clean vector style.";
+
+        // --- PATTERN INTERRUPT ---
+        
+        case CreativeFormat.UGLY_VISUAL:
+            return "Style: THE UGLY AD AESTHETIC. Intentionally bad design. Clashing colors (e.g. Yellow background with Red text). Use MS Paint style arrows drawn crudely. Low-resolution feel. It must look like a scam or a meme to break banner blindness. NO professional polish.";
+            
+        case CreativeFormat.MS_PAINT:
+            return "Style: MS PAINT DRAWING. Crude stick figures, bucket-fill colors, pixelated brush strokes. Looks like a 5-year-old or a shitposter made it. White canvas background.";
+            
+        case CreativeFormat.REDDIT_THREAD:
+            return "Style: REDDIT DARK MODE UI. Black background. Grey card container. Upvote/Downvote arrows (Orange/Blue) on the left. Title text in white. 'Join' button visible. Looks like a viral screenshot.";
+            
+        case CreativeFormat.STICKY_NOTE_REALISM:
+             return "Style: REAL STICKY NOTE. A macro photo of a yellow Post-it note stuck on a fridge, mirror, or laptop. Handwritten text in black Sharpie/Marker. Realistic paper texture and shadow.";
+
+        case CreativeFormat.BIG_FONT:
+            return "Style: KINETIC TYPOGRAPHY. 80% of the image is text. Massive, bold, sans-serif font. High contrast (Black on Yellow, or White on Red). The text interacts with the background elements slightly.";
+            
+        case CreativeFormat.BILLBOARD:
+            return "Style: OUTDOOR BILLBOARD. A realistic photo of a billboard on a highway or Times Square. The ad content is displayed on the billboard structure. Cinematic lighting (sunset or city lights).";
+
+        // --- CAROUSELS ---
+        
+        case CreativeFormat.CAROUSEL_EDUCATIONAL:
+            return "Style: CAROUSEL SLIDE DECK. Flat vector design. Solid pastel background. Clean typography hierarchy (Big Header, Small Body). Icons illustrating the points. Looks like an Instagram educational post.";
+            
+        case CreativeFormat.CAROUSEL_PHOTO_DUMP:
+            return "Style: AESTHETIC PHOTO DUMP. Flash photography. Uncurated, messy-chic vibe. A mix of textures, close-ups, and lifestyle shots. Film grain overlay. Looks like a Gen-Z weekend update.";
+
+        case CreativeFormat.PRESS_FEATURE:
+            return "Style: MAGAZINE SPREAD. A layout looking like Vogue, Forbes, or NYT. Serif typography. Professional photography. 'Featured in' badges visible. Authority and Trust aesthetic.";
+            
+        case CreativeFormat.LEAD_MAGNET_3D:
+             return "Style: 3D BOOK MOCKUP. A realistic 3D render of a book, PDF guide, or report. It's standing up or floating. Drop shadow. The cover design is visible and catchy. 'Free Download' badge.";
+
+        // --- DEFAULTS ---
         case CreativeFormat.AESTHETIC_MINIMAL:
             return "Style: High-end editorial (Beige/Cream tones). Serif fonts, plenty of white space. Aspirational and premium.";
-        case CreativeFormat.STORY_POLL:
-        case CreativeFormat.STORY_QNA:
-            return "Style: IG Story with interactive stickers (Poll/Q&A) in center. UGC background. Invites 'Phantom Interaction' touching.";
-        case CreativeFormat.REELS_THUMBNAIL:
-            return "Style: High-energy thumbnail. Bold text, expressive faces, high saturation. Designed for the Reels Explore feed.";
-        case CreativeFormat.DM_NOTIFICATION:
-            return "Style: Stacked iPhone lockscreen notifications. Glassmorphism blur. Triggers dopamine 'New Message' reflex.";
         case CreativeFormat.UGC_MIRROR:
             return "Style: Raw mirror selfie. Flash photography, messy room background. 100% authentic human connection.";
-        case CreativeFormat.HANDHELD_TWEET:
-            return "Style: POV photo of a hand holding a phone displaying a tweet. Depth of field focus on the screen. Cafe/Street background.";
-        case CreativeFormat.SOCIAL_COMMENT_STACK:
-            return "Style: 3-5 social media comment bubbles stacked over a raw product shot. Proves massive market validation.";
-        case CreativeFormat.CHAT_CONVERSATION:
-            return "Style: iMessage/WhatsApp thread simulation. Green/Blue bubbles. Includes 'Typing...' for realistic immersion.";
-        case CreativeFormat.REMINDER_NOTIF:
-            return "Style: iPhone Reminder notification bubble. Minimalist, urgent, and personal. 'Don't forget this' vibe.";
-
-        // --- LOGIC / CONVERSION (THE PROOF) ---
-        case CreativeFormat.US_VS_THEM:
-            return "Style: Binary Logic table. Vibrant 'Us' vs Grayscale 'Them'. Checkmarks vs X-marks. Brutal logical comparison.";
-        case CreativeFormat.VENN_DIAGRAM:
-            return "Style: Data visualization of the 'Sweet Spot'. Clear overlapping circles. The 'Eureka' moment of the solution.";
-        case CreativeFormat.TESTIMONIAL_HIGHLIGHT:
-            return "Style: Screenshot of a text review with a yellow marker highlight over the 'Benefit' sentence. Authentic proof.";
-        case CreativeFormat.GRAPH_CHART:
-            return "Style: Rising line graph or bar chart. Visualizing growth or pain reduction. Proof of results through data.";
-        case CreativeFormat.TIMELINE_JOURNEY:
-            return "Style: Horizontal timeline (Day 1, Day 7, Day 30). Visualizes the speed of results and the transformation process.";
-        case CreativeFormat.BENEFIT_POINTERS:
-        case CreativeFormat.ANNOTATED_PRODUCT:
-            return "Style: Hero shot of product with thin 'leader lines' pointing to ingredients/features. Educational anatomy.";
-        case CreativeFormat.SEARCH_BAR:
-            return "Style: Google Search simulation. White background. A query typed in (The Pain Point). Focus on 'Unaware' problem solving.";
-        case CreativeFormat.POV_HANDS:
-            return "Style: First-person POV looking down at hands using the product. High tactile detail. 'In-use' demonstration.";
-
-        // --- AESTHETIC ---
-        case CreativeFormat.COLLAGE_SCRAPBOOK:
-            return "Style: Mixed media collage. Ripped paper, tape, polaroids, and textures. Artsy, tactile, and highly engaging.";
         case CreativeFormat.CHECKLIST_TODO:
             return "Style: Handwritten to-do list on a clipboard or notepad. Problems are crossed out, solutions are checked.";
 
         default:
-            return "Style: High-quality, native social media asset. Realistic lighting, sharp focus, authentic texture. Hindari estetika stock photo.";
+            return "Style: High-quality, native social media asset. Realistic lighting, sharp focus, authentic texture. Avoid generic stock photo look.";
     }
 };
 

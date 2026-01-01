@@ -14,6 +14,7 @@ import {
   UglyAdStructure
 } from "../../types";
 import { ai, extractJSON, generateWithRetry } from "./client";
+import { getFormatTextGuide } from "./imageText"; // IMPORT THE SOURCE OF TRUTH
 
 export const generateSalesLetter = async (
   project: ProjectContext,
@@ -144,27 +145,8 @@ export const generateCreativeStrategy = async (
       `;
   }
 
-  // Format Specific Override
-  let formatInstruction = "";
-  if (format === CreativeFormat.GMAIL_UX) formatInstruction = "Visual must look like a Gmail interface. Embedded Text is the 'Subject Line'.";
-  if (format === CreativeFormat.TWITTER_REPOST) formatInstruction = "Visual must look like a Tweet. Embedded Text is the 'Tweet Content'.";
-  if (format === CreativeFormat.REMINDER_NOTIF) formatInstruction = "Visual must look like a Lockscreen Notification. Embedded Text is the notification message.";
-  if (format === CreativeFormat.BILLBOARD) formatInstruction = "Visual is a billboard. Embedded Text is the billboard slogan.";
-  
-  // --- UGLY AD FORMULA INJECTION ---
-  if (format === CreativeFormat.UGLY_VISUAL || format === CreativeFormat.STICKY_NOTE_REALISM || format === CreativeFormat.MS_PAINT) {
-      formatInstruction += `
-      **UGLY AD FORMULA (STRICT REQUIREMENT):**
-      This format requires the 'Embedded Text' to be constructed using these 4 specific elements:
-      1. **Keyword:** A specific trigger word (e.g. "Jakarta Residents" or "Back Pain").
-      2. **Emotion:** The core feeling (e.g. "I felt ashamed", "Finally").
-      3. **Qualifier:** Who is this for? (e.g. "For busy moms only").
-      4. **Outcome:** The result (e.g. "Sleep in 5 mins").
-      
-      Combine these into a single punchy, amateur-looking text overlay. 
-      Example: "Jakarta Moms: Stop feeling guilty about dinner. Cook in 5 mins."
-      `;
-  }
+  // USE THE SOURCE OF TRUTH FOR FORMAT INSTRUCTIONS
+  const formatInstruction = getFormatTextGuide(format);
 
   const prompt = `
     # ROLE: World-Class Creative Strategist (Meta & TikTok Ads)
