@@ -370,26 +370,23 @@ const Node: React.FC<NodeProps> = ({ data, selected, onClick, onAction, isGridVi
                         {isValidated ? 'Angle Validated' : 'Validate Angle'}
                      </button>
 
-                    <div className="relative group">
-                        <button 
-                        onClick={(e) => { e.stopPropagation(); onAction('generate_creatives', data.id); }}
-                        disabled={!isValidated} // VISUAL DISABLE
-                        className={`w-full py-2 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-2 shadow-sm ${
-                            isValidated 
-                            ? 'bg-white hover:bg-indigo-50 border-slate-200 text-indigo-600 cursor-pointer' 
-                            : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                        }`}
-                        >
-                            {isValidated ? <Sparkles className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                            {isValidated ? 'Generate Formats' : 'Validate to Unlock'}
-                        </button>
-                        {!isValidated && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-32 bg-slate-800 text-white text-[9px] p-2 rounded z-50 shadow-xl pointer-events-none text-center">
-                                You must validate this angle before generating creatives.
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                            </div>
-                        )}
-                    </div>
+                    <button 
+                    onClick={(e) => { e.stopPropagation(); onAction('generate_creatives', data.id); }}
+                    disabled={!isValidated} // VISUAL DISABLE
+                    className={`w-full py-2 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-2 shadow-sm ${
+                        isValidated 
+                        ? 'bg-white hover:bg-indigo-50 border-slate-200 text-indigo-600 cursor-pointer' 
+                        : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                    }`}
+                    >
+                        {isValidated ? <Sparkles className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {isValidated ? 'Generate Formats' : 'Locked'}
+                    </button>
+                    {!isValidated && (
+                        <div className="text-[9px] text-center text-slate-400 font-medium">
+                            Validate angle above to unlock
+                        </div>
+                    )}
                 </div>
             )}
             

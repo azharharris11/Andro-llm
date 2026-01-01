@@ -353,6 +353,15 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
         ))}
       </div>
       
+      {/* LEGEND - Positioned above Mini Map */}
+      <div className="absolute bottom-44 left-8 p-3 bg-white/90 backdrop-blur border border-slate-200 rounded-xl shadow-lg z-40 hidden md:flex flex-col gap-2 w-[200px]">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Flow Legend</h4>
+          <div className="flex items-center gap-2 text-[10px] text-slate-600 font-medium"><div className="w-2.5 h-2.5 rounded bg-rose-100 border border-rose-300"></div> Mass Desire (Pain)</div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-600 font-medium"><div className="w-2.5 h-2.5 rounded bg-white border border-slate-300"></div> Persona / Angle</div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-600 font-medium"><div className="w-2.5 h-2.5 rounded bg-orange-100 border border-orange-300"></div> Story Strategy</div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-600 font-medium"><div className="w-2.5 h-2.5 rounded bg-white ring-1 ring-blue-500"></div> Creative Asset</div>
+      </div>
+
       {/* MINI MAP */}
       {renderMiniMap()}
       

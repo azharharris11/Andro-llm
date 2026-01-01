@@ -75,11 +75,17 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   const { adCopy, imageUrl, carouselImages, title, format, postId, aiInsight, audioScript, audioBase64, stage, prediction, testingTier, variableIsolated, congruenceRationale, videoUrl, mafiaOffer } = node;
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'INSIGHTS' | 'AUDIO' | 'VIDEO'>('PREVIEW');
   const [aspectRatio, setAspectRatio] = useState<'SQUARE' | 'VERTICAL'>('SQUARE');
+  
+  // Generation States
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isAuditingHeadline, setIsAuditingHeadline] = useState(false);
   const [isGeneratingMafia, setIsGeneratingMafia] = useState(false);
+  
+  // Dynamic Loading Status Text
+  const [loadingStatus, setLoadingStatus] = useState<string>("");
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0); 
   const [showPrompt, setShowPrompt] = useState(false);
@@ -102,23 +108,57 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   const personaName = node.meta?.name || node.meta?.personaName || "General Audience";
   const awarenessLevel = project?.marketAwareness || "Unknown";
   
+  // --- HELPER FOR DYNAMIC STATUS ---
+  const runWithStatus = async (stages: string[], action: () => Promise<void>, setFlag: (b: boolean) => void) => {
+      setFlag(true);
+      let active = true;
+      
+      // Cycle through status messages
+      const cycleStatus = async () => {
+          for (let i = 0; i < stages.length; i++) {
+              if (!active) break;
+              setLoadingStatus(stages[i]);
+              // Wait random time between 1-2s for realism
+              await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+          }
+      };
+      
+      const statusPromise = cycleStatus();
+      
+      try {
+          await action();
+      } finally {
+          active = false;
+          setLoadingStatus("");
+          setFlag(false);
+      }
+  };
+
   const handleNextSlide = () => setCarouselIndex((prev) => (prev + 1) % allImages.length);
   const handlePrevSlide = () => setCarouselIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
 
   const handleGenerateScript = async () => {
     if (!onUpdate || !project) return;
-    setIsGeneratingScript(true);
-    const script = await generateAdScript(project, node.meta?.personaName || "User", node.title);
-    onUpdate(node.id, { audioScript: script });
-    setIsGeneratingScript(false);
+    await runWithStatus(
+        ["Analyzing persona voice...", "Identifying slang keywords...", "Drafting hook...", "Polishing for virality..."],
+        async () => {
+            const script = await generateAdScript(project, node.meta?.personaName || "User", node.title);
+            onUpdate(node.id, { audioScript: script });
+        },
+        setIsGeneratingScript
+    );
   };
 
   const handleGenerateVoice = async () => {
     if (!onUpdate || !audioScript) return;
-    setIsGeneratingAudio(true);
-    const base64 = await generateVoiceover(audioScript, node.meta?.personaName || "User");
-    if (base64) onUpdate(node.id, { audioBase64: base64 });
-    setIsGeneratingAudio(false);
+    await runWithStatus(
+        ["Synthesizing audio...", "Adjusting intonation...", "Applying emotion filter..."],
+        async () => {
+            const base64 = await generateVoiceover(audioScript, node.meta?.personaName || "User");
+            if (base64) onUpdate(node.id, { audioBase64: base64 });
+        },
+        setIsGeneratingAudio
+    );
   };
 
   const handleGenerateVideo = async () => {
@@ -126,34 +166,45 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
     const hasKey = await window.aistudio?.hasSelectedApiKey();
     if (!hasKey) { await window.aistudio?.openSelectKey(); return; }
     
-    setIsGeneratingVideo(true);
-    const prompt = `Cinematic video for ${project.productName}. ${node.title}. ${node.description || 'High quality advertising shot.'}`;
-    const result = await generateVeoVideo(project, imageUrl, prompt);
-    if (result.data) {
-        onUpdate(node.id, { videoUrl: result.data });
-        setActiveTab('VIDEO');
-    }
-    setIsGeneratingVideo(false);
+    await runWithStatus(
+        ["Initializing Veo model...", "Dreaming up scene...", "Rendering frames...", "Adding cinematic lighting...", "Compressing output..."],
+        async () => {
+            const prompt = `Cinematic video for ${project.productName}. ${node.title}. ${node.description || 'High quality advertising shot.'}`;
+            const result = await generateVeoVideo(project, imageUrl, prompt);
+            if (result.data) {
+                onUpdate(node.id, { videoUrl: result.data });
+                setActiveTab('VIDEO');
+            }
+        },
+        setIsGeneratingVideo
+    );
   };
   
   const handleSabriAudit = async () => {
       if (!onUpdate || !adCopy?.headline || !project) return;
-      setIsAuditingHeadline(true);
-      const audit = await auditHeadlineSabri(adCopy.headline, project.targetAudience);
-      const updatedPrediction = prediction ? { ...prediction, sabriAudit: audit } : { score: 0, hookStrength: 'Moderate', clarity: 'Clear', emotionalResonance: 'Flat', reasoning: 'Pending', sabriAudit: audit };
-      
-      onUpdate(node.id, { prediction: updatedPrediction as any });
-      setIsAuditingHeadline(false);
+      await runWithStatus(
+          ["Checking the 4 U's...", "Analyzing urgency...", "Measuring emotional impact...", "Calculating score..."],
+          async () => {
+              const audit = await auditHeadlineSabri(adCopy.headline, project.targetAudience);
+              const updatedPrediction = prediction ? { ...prediction, sabriAudit: audit } : { score: 0, hookStrength: 'Moderate', clarity: 'Clear', emotionalResonance: 'Flat', reasoning: 'Pending', sabriAudit: audit };
+              onUpdate(node.id, { prediction: updatedPrediction as any });
+          },
+          setIsAuditingHeadline
+      );
   };
 
   const handleGenerateMafiaOffer = async () => {
       if (!onUpdate || !project) return;
-      setIsGeneratingMafia(true);
-      const result = await generateMafiaOffer(project);
-      if (result.data) {
-          onUpdate(node.id, { mafiaOffer: result.data });
-      }
-      setIsGeneratingMafia(false);
+      await runWithStatus(
+          ["Stacking value...", "Removing risk...", "Injecting scarcity...", "Finalizing offer..."],
+          async () => {
+              const result = await generateMafiaOffer(project);
+              if (result.data) {
+                  onUpdate(node.id, { mafiaOffer: result.data });
+              }
+          },
+          setIsGeneratingMafia
+      );
   };
 
   const handlePlayAudio = async () => {
@@ -218,7 +269,17 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
         <button onClick={() => setActiveTab('INSIGHTS')} className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${activeTab === 'INSIGHTS' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}><Activity className="w-3.5 h-3.5" /> Audit</button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar relative">
+        
+        {/* DYNAMIC LOADING OVERLAY */}
+        {loadingStatus && (
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+                <span className="text-sm font-bold text-slate-800 animate-pulse">{loadingStatus}</span>
+                <p className="text-xs text-slate-400 mt-2 text-center max-w-[200px]">AI is performing complex reasoning. This may take a moment.</p>
+            </div>
+        )}
+
         {activeTab === 'PREVIEW' && (
             <>
                 <div className="flex justify-between items-center mb-6">
