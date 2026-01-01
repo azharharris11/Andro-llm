@@ -89,6 +89,10 @@ const App: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [inspectorNodeId, setInspectorNodeId] = useState<string | null>(null);
   
+  // Golden Thread State
+  const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(new Set());
+  const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<Set<string>>(new Set());
+  
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isFormatSelectorOpen, setIsFormatSelectorOpen] = useState(false);
   const [pendingFormatParentId, setPendingFormatParentId] = useState<string | null>(null);
@@ -102,35 +106,105 @@ const App: React.FC = () => {
   // --- CALCULATE DIVERSITY SCORE ---
   useEffect(() => {
       let score = 0;
-      // Level 1: Multi-Format
       const formats = new Set(nodes.filter(n => n.type === NodeType.CREATIVE).map(n => n.format));
       if (formats.size >= 3) score += 1;
-      
-      // Level 2: Mass Desires
       if (nodes.some(n => n.type === NodeType.MASS_DESIRE_NODE)) score += 1;
-      
-      // Level 3: Angles
       if (nodes.filter(n => n.type === NodeType.ANGLE).length >= 3) score += 1;
-      
-      // Level 4: Personas
       if (nodes.filter(n => n.type === NodeType.PERSONA).length >= 2) score += 1;
-      
       setDiversityScore(score);
   }, [nodes]);
+  
+  // --- GOLDEN THREAD CALCULATION ---
+  useEffect(() => {
+    if (!selectedNodeId) {
+        setHighlightedNodeIds(new Set());
+        setHighlightedEdgeIds(new Set());
+        return;
+    }
 
-  // --- ANCESTRY TRAVERSAL (SOLVES CONTEXT AMNESIA) ---
+    const nodeIds = new Set<string>();
+    const edgeIds = new Set<string>();
+    
+    let currentId = selectedNodeId;
+    nodeIds.add(currentId);
+
+    // Trace Ancestry (Parents)
+    while (currentId) {
+        const parentEdge = edges.find(e => e.target === currentId);
+        if (parentEdge) {
+            edgeIds.add(parentEdge.id);
+            currentId = parentEdge.source;
+            nodeIds.add(currentId);
+        } else {
+            break;
+        }
+    }
+    
+    setHighlightedNodeIds(nodeIds);
+    setHighlightedEdgeIds(edgeIds);
+
+  }, [selectedNodeId, edges]);
+
+  // --- AUTO LAYOUT ALGORITHM ---
+  const handleAutoLayout = () => {
+    const LEVEL_WIDTH = 450;
+    const VERTICAL_SPACING = 300;
+    
+    const newNodes = [...nodes];
+    const levels: Record<string, NodeData[]> = {};
+    
+    // Group by Hierarchy approximation
+    const getLevel = (node: NodeData): number => {
+        if (node.type === NodeType.ROOT) return 0;
+        if (node.type === NodeType.MASS_DESIRE_NODE) return 1;
+        if (node.type === NodeType.PERSONA || node.type === NodeType.STORY_NODE) return 2;
+        if (node.type === NodeType.BIG_IDEA_NODE || node.type === NodeType.HVCO_NODE) return 3;
+        if (node.type === NodeType.MECHANISM_NODE) return 4;
+        if (node.type === NodeType.HOOK_NODE || node.type === NodeType.ANGLE) return 5;
+        if (node.type === NodeType.CREATIVE || node.type === NodeType.SALES_LETTER) return 6;
+        if (node.type === NodeType.LANDING_PAGE_NODE) return 7;
+        return 0;
+    };
+
+    // Assign Levels
+    newNodes.forEach(n => {
+        const lvl = getLevel(n);
+        if (!levels[lvl]) levels[lvl] = [];
+        levels[lvl].push(n);
+    });
+
+    // Reposition
+    Object.keys(levels).forEach(lvlKey => {
+        const lvl = parseInt(lvlKey);
+        const nodesInLevel = levels[lvl];
+        nodesInLevel.forEach((node, idx) => {
+            // Keep existing logical groupings roughly by sorting by parent Y if possible
+            node.x = 100 + (lvl * LEVEL_WIDTH);
+            node.y = 300 + (idx * VERTICAL_SPACING) - ((nodesInLevel.length * VERTICAL_SPACING) / 2);
+        });
+    });
+
+    setNodes(newNodes);
+  };
+  
+  // --- SEARCH FUNCTIONALITY ---
+  const handleSearch = (query: string) => {
+      const match = nodes.find(n => n.title.toLowerCase().includes(query.toLowerCase()) || n.format?.toLowerCase().includes(query.toLowerCase()));
+      if (match && canvasRef.current) {
+          canvasRef.current.flyTo(match.x, match.y, 1);
+          setSelectedNodeId(match.id);
+      }
+  };
+
+  // --- ANCESTRY TRAVERSAL ---
   const getAncestryContext = (startNodeId: string) => {
     let currentNode = nodes.find(n => n.id === startNodeId);
     let accumulatedContext: any = {};
-    
-    // Explicit keys we want to inherit
     const mergeKeys = ['massDesireData', 'storyData', 'bigIdeaData', 'mechanismData', 'hvcoData', 'meta'];
 
     while (currentNode) {
-        // Merge data, prioritizing child data (more specific) over parent data
         mergeKeys.forEach(key => {
             if ((currentNode as any)[key]) {
-                // If it's 'meta', we merge objects. Otherwise, we set if not exists.
                 if (key === 'meta') {
                     accumulatedContext.meta = { ...(currentNode as any).meta, ...accumulatedContext.meta };
                 } else if (!accumulatedContext[key]) {
@@ -138,8 +212,6 @@ const App: React.FC = () => {
                 }
             }
         });
-        
-        // Find parent
         if (currentNode.parentId) {
             currentNode = nodes.find(n => n.id === currentNode!.parentId);
         } else {
@@ -170,12 +242,10 @@ const App: React.FC = () => {
       const node = nodes.find(n => n.id === nodeId);
       if (!node) return;
 
-      // --- MASS DESIRE DISCOVERY (NEW) ---
       if (action === 'generate_desires') {
           handleUpdateNode(nodeId, { isLoading: true });
           const result = await GeminiService.generateMassDesires(project);
           handleUpdateNode(nodeId, { isLoading: false, outputTokens: (node.outputTokens || 0) + result.outputTokens });
-          
           if (result.data) {
               result.data.forEach((d: MassDesireOption, i: number) => {
                   addNode({
@@ -193,12 +263,10 @@ const App: React.FC = () => {
           }
       }
 
-      // Handle Basic Expansion
       if (action === 'expand_personas') {
           handleUpdateNode(nodeId, { isLoading: true });
           const result = await GeminiService.generatePersonas(project);
           handleUpdateNode(nodeId, { isLoading: false, outputTokens: (node.outputTokens || 0) + result.outputTokens });
-          
           if (result.data) {
               result.data.forEach((p: any, i: number) => {
                   addNode({
@@ -206,7 +274,7 @@ const App: React.FC = () => {
                       type: NodeType.PERSONA,
                       title: p.name,
                       description: p.profile,
-                      meta: p, // contains visceralSymptoms, etc.
+                      meta: p, 
                       x: node.x + 400,
                       y: node.y + (i - 1) * 250,
                       parentId: nodeId,
@@ -216,12 +284,10 @@ const App: React.FC = () => {
           }
       }
 
-      // Handle Story Flow (Megaprompt)
       if (action === 'start_story_flow') {
           handleUpdateNode(nodeId, { isLoading: true });
           const result = await GeminiService.generateStoryResearch(project);
           handleUpdateNode(nodeId, { isLoading: false });
-          
           if (result.data) {
               result.data.forEach((story: StoryOption, i: number) => {
                   addNode({
@@ -238,36 +304,10 @@ const App: React.FC = () => {
           }
       }
       
-      // Handle EXPRESS PROMO FLOW (NEW)
-      if (action === 'start_express_flow') {
-          handleUpdateNode(nodeId, { isLoading: true });
-          const expressProject = { ...project, strategyMode: StrategyMode.HARD_SELL };
-          const result = await GeminiService.generateExpressAngles(expressProject);
-          handleUpdateNode(nodeId, { isLoading: false });
-          
-          if (result.data) {
-              result.data.forEach((promo: any, i: number) => {
-                   addNode({
-                       id: uuidv4(),
-                       type: NodeType.ANGLE,
-                       title: promo.headline,
-                       description: `${promo.testingTier}: ${promo.hook}`,
-                       meta: { angle: promo.hook, ...promo },
-                       testingTier: promo.testingTier,
-                       validationStatus: 'PENDING',
-                       x: node.x + 400,
-                       y: node.y + (i - 1) * 200,
-                       parentId: nodeId
-                   }, nodeId);
-              });
-          }
-      }
-
       if (action === 'generate_big_ideas' && node.storyData) {
           handleUpdateNode(nodeId, { isLoading: true });
           const result = await GeminiService.generateBigIdeas(project, node.storyData);
           handleUpdateNode(nodeId, { isLoading: false });
-          
           if (result.data) {
               result.data.forEach((idea: BigIdeaOption, i: number) => {
                   addNode({
@@ -289,7 +329,6 @@ const App: React.FC = () => {
           handleUpdateNode(nodeId, { isLoading: true });
           const result = await GeminiService.generateMechanisms(project, node.bigIdeaData);
           handleUpdateNode(nodeId, { isLoading: false });
-          
           if (result.data) {
               result.data.forEach((mech: MechanismOption, i: number) => {
                   addNode({
@@ -312,7 +351,6 @@ const App: React.FC = () => {
            handleUpdateNode(nodeId, { isLoading: true });
            const result = await GeminiService.generateHooks(project, node.bigIdeaData, node.mechanismData, node.storyData);
            handleUpdateNode(nodeId, { isLoading: false });
-
            if (result.data) {
                result.data.forEach((hook: string, i: number) => {
                    addNode({
@@ -350,7 +388,7 @@ const App: React.FC = () => {
                       description: `${a.testingTier}: ${a.hook}`,
                       meta: { ...node.meta, angle: a.hook, ...a },
                       testingTier: a.testingTier,
-                      validationStatus: 'PENDING', // NEW: Waiting for user validation
+                      validationStatus: 'PENDING', 
                       x: node.x + 400,
                       y: node.y + (i - 1) * 250,
                       parentId: nodeId
@@ -359,7 +397,6 @@ const App: React.FC = () => {
           }
       }
       
-      // NEW: Toggle Validation
       if (action === 'toggle_validation') {
           const newStatus = node.validationStatus === 'VALIDATED' ? 'PENDING' : 'VALIDATED';
           handleUpdateNode(nodeId, { validationStatus: newStatus });
@@ -370,7 +407,6 @@ const App: React.FC = () => {
            const pain = node.meta.visceralSymptoms?.[0] || "General Pain";
            const result = await GeminiService.generateHVCOIdeas(project, pain);
            handleUpdateNode(nodeId, { isLoading: false });
-           
            if (result.data) {
                result.data.forEach((hvco: HVCOOption, i: number) => {
                    addNode({
@@ -389,10 +425,9 @@ const App: React.FC = () => {
       }
 
       if (action === 'generate_creatives' || action === 'open_format_selector') {
-          // STRICT VALIDATION ENFORCEMENT
+          // STRICT VALIDATION ENFORCEMENT MOVED TO UI STATE, but keeping strict logic here too
           if (node.type === NodeType.ANGLE && node.validationStatus !== 'VALIDATED') {
-              alert("Wait! Strategy Rule: You must VALIDATE this Angle first (Click 'Validate Angle') before spending budget on creatives.");
-              return;
+              return; // UI should handle disabling, but this is safety
           }
           setPendingFormatParentId(nodeId);
           setIsFormatSelectorOpen(true);
@@ -402,12 +437,10 @@ const App: React.FC = () => {
           handleUpdateNode(nodeId, { stage: CampaignStage.SCALING, isWinning: true });
       }
 
-      // NEW: Landing Page Generation
       if (action === 'generate_landing_page') {
           const ancestry = getAncestryContext(nodeId);
           handleUpdateNode(nodeId, { isLoading: true });
           
-          // Use data from the creative and its ancestry
           const story = ancestry.storyData || { narrative: "General Brand Story", emotionalTheme: "Trust" };
           const bigIdea = ancestry.bigIdeaData || { headline: "New Opportunity", concept: "Better Way", targetBelief: "Old Way" };
           const mechanism = ancestry.mechanismData || { scientificPseudo: "Smart Tech", ums: "Works Fast", ump: "Slow Results" };
@@ -440,11 +473,9 @@ const App: React.FC = () => {
       setIsFormatSelectorOpen(false);
       handleUpdateNode(pendingFormatParentId, { isLoading: true });
       
-      // FIX: Use Ancestry Context for Deep Nodes
       const ancestry = getAncestryContext(pendingFormatParentId);
       const fullStrategyContext = {
           ...ancestry,
-          // Ensure current node data overrides if exists
           ...parentNode
       };
 
@@ -517,7 +548,7 @@ const App: React.FC = () => {
                        cta: strategy.cta
                    },
                    meta: { 
-                       ...ancestry.meta, // Inherit ancestral meta
+                       ...ancestry.meta, 
                        angle: angleToUse, 
                        concept: {
                            visualScene: strategy.visualScene,
@@ -525,11 +556,10 @@ const App: React.FC = () => {
                            copyAngle: strategy.headline,
                            rationale: strategy.rationale,
                            congruenceRationale: strategy.congruenceRationale,
-                           uglyAdStructure: strategy.uglyAdStructure // SAVE UGLY FORMULA
+                           uglyAdStructure: strategy.uglyAdStructure
                        }, 
                        finalGenerationPrompt 
                    },
-                   // Inherit context explicitly for Inspector
                    storyData: ancestry.storyData,
                    bigIdeaData: ancestry.bigIdeaData,
                    mechanismData: ancestry.mechanismData,
@@ -574,7 +604,6 @@ const App: React.FC = () => {
       handleUpdateNode(id, { isLoading: true });
       const concept = node.meta.concept;
       
-      // Use Ancestry here too for safety
       const ancestry = getAncestryContext(id);
       const fullStrategyContext = { ...ancestry, ...node };
       
@@ -606,6 +635,9 @@ const App: React.FC = () => {
             simulating={simulating}
             onRunSimulation={handleRunSimulation}
             diversityScore={diversityScore}
+            onAutoLayout={handleAutoLayout}
+            onSearch={handleSearch}
+            nodes={nodes} // PASS NODES TO HEADER
         />
         
         <div className="flex-1 relative">
@@ -618,6 +650,8 @@ const App: React.FC = () => {
                    selectedNodeId={selectedNodeId}
                    onSelectNode={(id) => { setSelectedNodeId(id); if (id) setInspectorNodeId(id); else setInspectorNodeId(null); }}
                    onNodeMove={handleNodeMove}
+                   highlightedEdgeIds={highlightedEdgeIds}
+                   highlightedNodeIds={highlightedNodeIds}
                />
            ) : (
                <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto h-full">
@@ -642,7 +676,7 @@ const App: React.FC = () => {
            )}
            
            {inspectorNodeId && (
-               <div className="absolute top-0 right-0 bottom-0 w-[450px] z-20">
+               <div className="absolute top-0 right-0 bottom-0 z-20 pointer-events-none flex justify-end">
                    <Inspector 
                        node={nodes.find(n => n.id === inspectorNodeId)!} 
                        onClose={() => setInspectorNodeId(null)}

@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { NodeData, AdCopy, ProjectContext, CampaignStage } from '../types';
-import { X, ThumbsUp, MessageCircle, Share2, Globe, MoreHorizontal, Download, Smartphone, Layout, Sparkles, BrainCircuit, Mic, Play, Pause, Wand2, ChevronLeft, ChevronRight, Layers, RefreshCw, Archive, Clock, ShieldAlert, BarChart3, AlertTriangle, Activity, CheckCircle2, Video, Film, Loader2, DollarSign, ChevronDown, ChevronUp, Copy, Eye, Fingerprint, BookOpen, Target, Cpu, Lightbulb, Palette, Megaphone, Type } from 'lucide-react';
+import { X, ThumbsUp, MessageCircle, Share2, Globe, MoreHorizontal, Download, Smartphone, Layout, Sparkles, BrainCircuit, Mic, Play, Pause, Wand2, ChevronLeft, ChevronRight, Layers, RefreshCw, Archive, Clock, ShieldAlert, BarChart3, AlertTriangle, Activity, CheckCircle2, Video, Film, Loader2, DollarSign, ChevronDown, ChevronUp, Copy, Eye, Fingerprint, BookOpen, Target, Cpu, Lightbulb, Palette, Megaphone, Type, Maximize2, Minimize2 } from 'lucide-react';
 import { generateAdScript, generateVoiceover, generateVeoVideo, auditHeadlineSabri, generateMafiaOffer } from '../services/geminiService';
 
 interface InspectorProps {
@@ -41,6 +41,9 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   const [carouselIndex, setCarouselIndex] = useState(0); 
   const [showPrompt, setShowPrompt] = useState(false);
   
+  // Responsive State
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const isLabAsset = stage === CampaignStage.TESTING;
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -50,12 +53,10 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   const allImages = imageUrl ? [imageUrl, ...(carouselImages || [])] : [];
   const hasCarousel = allImages.length > 1;
   
-  // FIX: Prioritize the "Final Mega Prompt" if available
   const technicalPrompt = node.meta?.finalGenerationPrompt;
   const rationale = node.meta?.concept?.rationale;
-  const uglyAdStructure = node.meta?.concept?.uglyAdStructure; // Get Ugly Structure
+  const uglyAdStructure = node.meta?.concept?.uglyAdStructure; 
   
-  // STRATEGY DNA EXTRACTION
   const personaName = node.meta?.name || node.meta?.personaName || "General Audience";
   const personaMotivation = node.meta?.motivation || "N/A";
   const storyNarrative = node.storyData?.narrative || node.meta?.storyData?.narrative;
@@ -63,19 +64,13 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   const mechanism = node.mechanismData?.scientificPseudo || node.meta?.mechanismData?.scientificPseudo;
   const awarenessLevel = project?.marketAwareness || "Unknown";
   
-  // Angle vs Hook Differentiation
   const strategicAngle = node.meta?.angle || "Direct Benefit";
   const executionHook = node.hookData || node.adCopy?.headline || node.title;
   const formatUsed = node.format || "Standard";
   const languageStyle = project?.languageRegister || "Casual";
 
-  const handleNextSlide = () => {
-    setCarouselIndex((prev) => (prev + 1) % allImages.length);
-  };
-  
-  const handlePrevSlide = () => {
-    setCarouselIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-  };
+  const handleNextSlide = () => setCarouselIndex((prev) => (prev + 1) % allImages.length);
+  const handlePrevSlide = () => setCarouselIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
 
   const handleGenerateScript = async () => {
     if (!onUpdate || !project) return;
@@ -95,18 +90,12 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
 
   const handleGenerateVideo = async () => {
     if (!onUpdate || !project) return;
-    // Check if user has key
     const hasKey = await window.aistudio?.hasSelectedApiKey();
-    if (!hasKey) {
-        await window.aistudio?.openSelectKey();
-        return;
-    }
+    if (!hasKey) { await window.aistudio?.openSelectKey(); return; }
     
     setIsGeneratingVideo(true);
-    // Use Veo model
     const prompt = `Cinematic video for ${project.productName}. ${node.title}. ${node.description || 'High quality advertising shot.'}`;
     const result = await generateVeoVideo(project, imageUrl, prompt);
-    
     if (result.data) {
         onUpdate(node.id, { videoUrl: result.data });
         setActiveTab('VIDEO');
@@ -151,17 +140,10 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
     } catch (e) { console.error("Audio Playback Error", e); setIsPlaying(false); }
   };
 
-  const handleRegenerate = () => {
-      if (onRegenerate) {
-          onRegenerate(node.id, aspectRatio === 'SQUARE' ? '1:1' : '9:16');
-      }
-  };
+  const handleRegenerate = () => { if (onRegenerate) onRegenerate(node.id, aspectRatio === 'SQUARE' ? '1:1' : '9:16'); };
 
   const handleDownload = () => {
-      if (videoUrl) {
-          window.open(videoUrl, '_blank');
-          return;
-      }
+      if (videoUrl) { window.open(videoUrl, '_blank'); return; }
       if (!imageUrl) return;
       const link = document.createElement('a');
       link.href = imageUrl;
@@ -171,20 +153,22 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
       document.body.removeChild(link);
   };
 
-  const handlePromote = () => {
-      if (onPromote) onPromote(node.id);
-  };
+  // Responsive Width Calculation
+  const containerWidthClass = isExpanded ? 'w-full md:w-[800px]' : 'w-full md:w-[450px]';
 
   return (
-    <div className="h-full w-full flex flex-col bg-white border-l border-slate-200 shadow-2xl animate-in slide-in-from-right duration-300">
-      <div className="flex items-center justify-between p-4 border-b border-slate-100">
+    <div className={`h-full ${containerWidthClass} flex flex-col bg-white border-l border-slate-200 shadow-2xl animate-in slide-in-from-right duration-300 pointer-events-auto transition-all`}>
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">Ad Inspector</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">Inspector</h2>
         </div>
         <div className="flex items-center gap-2">
+            <button onClick={() => setIsExpanded(!isExpanded)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hidden md:block" title={isExpanded ? "Collapse" : "Expand"}>
+                {isExpanded ? <Minimize2 className="w-4 h-4"/> : <Maximize2 className="w-4 h-4"/>}
+            </button>
             {isLabAsset && onPromote && (
-                 <button onClick={handlePromote} className="p-1.5 hover:bg-amber-100 text-slate-400 hover:text-amber-600 rounded-md transition-colors" title="Promote to Vault">
+                 <button onClick={() => onPromote(node.id)} className="p-1.5 hover:bg-amber-100 text-slate-400 hover:text-amber-600 rounded-md transition-colors" title="Promote to Vault">
                      <Archive className="w-4 h-4" />
                  </button>
             )}
@@ -202,7 +186,6 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
       <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar">
         {activeTab === 'PREVIEW' && (
             <>
-                {/* 1. AD PREVIEW */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                         <button onClick={() => setAspectRatio('SQUARE')} className={`p-2 rounded transition-all ${aspectRatio === 'SQUARE' ? 'bg-slate-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`} title="Feed (1:1)"><Layout className="w-4 h-4" /></button>
@@ -216,7 +199,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                     )}
                 </div>
 
-                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mx-auto transition-all duration-300 ${aspectRatio === 'VERTICAL' ? 'max-w-[320px]' : 'max-w-[380px]'}`}>
+                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mx-auto transition-all duration-300 ${aspectRatio === 'VERTICAL' ? 'max-w-[300px]' : 'max-w-[380px]'}`}>
                 {aspectRatio === 'SQUARE' ? (
                     <>
                         <div className="p-3 flex items-center justify-between">
@@ -235,7 +218,6 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                                 <img src={allImages[carouselIndex]} alt={`Slide ${carouselIndex + 1}`} className="w-full h-full object-cover transition-all duration-300" />
                             ) : <div className="w-full h-full flex items-center justify-center text-slate-300">No Image</div>}
                             
-                            {/* Carousel UI Controls */}
                             {hasCarousel && (
                                 <>
                                     <button onClick={(e) => {e.stopPropagation(); handlePrevSlide();}} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-slate-800"><ChevronLeft className="w-4 h-4"/></button>
@@ -259,123 +241,48 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                             </div>
                             <button className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-[12px] font-semibold rounded transition-colors">{adCopy?.cta || "Learn More"}</button>
                         </div>
-                        <div className="px-3 py-2 border-t border-slate-100 flex items-center justify-between text-slate-500">
-                            <div className="flex items-center gap-1 text-xs"><ThumbsUp className="w-3 h-3" /> <span>244</span></div>
-                            <div className="flex items-center gap-4 text-xs"><span>42 Comments</span><span>12 Shares</span></div>
-                        </div>
                     </>
                 ) : (
                     <div className="aspect-[9/16] relative bg-slate-900 text-white overflow-hidden">
                          {allImages[carouselIndex] ? <img src={allImages[carouselIndex]} alt="Ad Creative" className="w-full h-full object-cover opacity-90" /> : <div className="w-full h-full flex items-center justify-center text-slate-600">No Image</div>}
-                         <div className="absolute top-4 left-4 flex items-center gap-2"><div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white">Z</div><span className="text-sm font-semibold shadow-black drop-shadow-md">Zenith Focus</span></div>
                          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent pt-20">
                             <div className="mb-4"><p className="text-sm font-medium leading-snug drop-shadow-md line-clamp-3">{adCopy?.primaryText}</p></div>
                             <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors">{adCopy?.cta || "Shop Now"} <MoreHorizontal className="w-4 h-4 rotate-90" /></button>
                          </div>
-                         {hasCarousel && (
-                            <div className="absolute bottom-[140px] left-0 right-0 flex justify-center gap-1">
-                                {allImages.map((_, idx) => <div key={idx} className={`h-1 rounded-full shadow-sm transition-all ${idx === carouselIndex ? 'bg-white w-6' : 'bg-white/50 w-2'}`}></div>)}
-                            </div>
-                         )}
                     </div>
                 )}
                 </div>
 
-                {/* 2. STRATEGIC FRAMEWORK BREAKDOWN (NEW & SUPER DETAILED) */}
+                {/* STRATEGIC DNA - REFACTORED FOR READABILITY */}
                 <div className="mt-8 border-t border-slate-200 pt-6 animate-in slide-in-from-bottom-2 duration-300">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                             <Fingerprint className="w-4 h-4" /> Strategy & Framework DNA
+                             <Fingerprint className="w-4 h-4" /> Strategy DNA
                         </h3>
-                        {testingTier && <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-bold uppercase">{testingTier}</span>}
                     </div>
 
                     <div className="space-y-4">
-                        {/* NEW: UGLY AD FORMULA BREAKDOWN */}
-                        {uglyAdStructure && (
-                            <div className="p-3 bg-rose-50 rounded-lg border border-rose-100 space-y-2">
-                                <div className="text-[10px] font-bold text-rose-700 uppercase flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Ugly Ad Formula</div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Keyword</span>{uglyAdStructure.keyword}</div>
-                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Emotion</span>{uglyAdStructure.emotion}</div>
-                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Qualifier</span>{uglyAdStructure.qualifier}</div>
-                                    <div className="bg-white/60 p-1.5 rounded"><span className="text-[9px] text-rose-400 block">Outcome</span>{uglyAdStructure.outcome}</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* A. IDENTITY MATRIX (Persona + Awareness) */}
+                        {/* A. IDENTITY MATRIX */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Target Persona</span>
                                 <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Fingerprint className="w-3 h-3 text-teal-500"/> {personaName}</div>
-                                <div className="text-[10px] text-slate-500 mt-1 leading-tight line-clamp-2 italic">"{personaMotivation}"</div>
                             </div>
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Market Awareness</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Awareness</span>
                                 <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Activity className="w-3 h-3 text-blue-500"/> {awarenessLevel}</div>
                             </div>
                         </div>
 
-                        {/* B. LOGIC CHAIN (Story -> Big Idea -> Mechanism) */}
-                        {(storyNarrative || bigIdea || mechanism) && (
-                            <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-sm space-y-3">
-                                 {storyNarrative && (
-                                    <div>
-                                        <span className="text-[9px] font-bold text-orange-500 uppercase block mb-0.5 flex items-center gap-1"><BookOpen className="w-3 h-3"/> Core Story</span>
-                                        <p className="text-[11px] text-slate-600 leading-snug">"{storyNarrative}"</p>
-                                    </div>
-                                 )}
-                                 {bigIdea && (
-                                    <div>
-                                        <span className="text-[9px] font-bold text-yellow-600 uppercase block mb-0.5 flex items-center gap-1"><Lightbulb className="w-3 h-3"/> Big Idea</span>
-                                        <p className="text-[11px] text-slate-600 leading-snug">{bigIdea}</p>
-                                    </div>
-                                 )}
-                                 {mechanism && (
-                                    <div>
-                                        <span className="text-[9px] font-bold text-cyan-600 uppercase block mb-0.5 flex items-center gap-1"><Cpu className="w-3 h-3"/> Mechanism</span>
-                                        <p className="text-[11px] text-slate-600 leading-snug">{mechanism}</p>
-                                    </div>
-                                 )}
-                            </div>
-                        )}
-
-                        {/* C. EXECUTION CHECK (Angle vs Hook vs Tone) */}
-                        <div className="bg-indigo-50/50 rounded-lg border border-indigo-100 overflow-hidden">
-                             <div className="p-2 border-b border-indigo-100 flex justify-between items-center bg-indigo-50">
-                                 <span className="text-[9px] font-bold text-indigo-500 uppercase flex items-center gap-1"><Target className="w-3 h-3"/> Execution Alignment</span>
-                                 <span className="text-[9px] text-indigo-400 font-mono flex items-center gap-1"><Layout className="w-3 h-3"/> {formatUsed}</span>
-                             </div>
-                             <div className="p-2.5 space-y-2">
-                                 <div>
-                                     <span className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">Strategic Angle (Input)</span>
-                                     <div className="text-xs font-medium text-indigo-900 leading-snug">"{strategicAngle}"</div>
-                                 </div>
-                                 
-                                 {executionHook && executionHook !== strategicAngle && (
-                                     <div className="pt-2 border-t border-indigo-100/50">
-                                         <span className="text-[9px] font-bold text-pink-500 uppercase block mb-0.5">Actual Hook (Output)</span>
-                                         <div className="text-xs text-slate-600">"{executionHook}"</div>
-                                     </div>
-                                 )}
-
-                                 <div className="pt-2 border-t border-indigo-100/50 flex gap-2">
-                                     <span className="px-1.5 py-0.5 bg-white rounded border border-indigo-100 text-[9px] text-indigo-600 font-bold">{languageStyle}</span>
-                                     {project?.brandVoice && <span className="px-1.5 py-0.5 bg-white rounded border border-indigo-100 text-[9px] text-indigo-600 font-bold">{project.brandVoice}</span>}
-                                 </div>
-                             </div>
-                        </div>
-
-                        {/* D. VISUAL RATIONALE */}
+                        {/* B. VISUAL RATIONALE */}
                         {rationale && (
                             <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-100">
-                                <span className="text-[9px] font-bold text-amber-600 uppercase block mb-1 flex items-center gap-1"><Eye className="w-3 h-3"/> Creative Logic</span>
+                                <span className="text-[9px] font-bold text-amber-600 uppercase block mb-1 flex items-center gap-1"><Eye className="w-3 h-3"/> Why this works</span>
                                 <p className="text-[11px] text-slate-600 italic leading-relaxed">"{rationale}"</p>
                             </div>
                         )}
-
-                        {/* E. TECHNICAL PROMPT (Toggle) - UPDATED TO SHOW MEGA PROMPT */}
+                        
+                        {/* C. TECHNICAL PROMPT */}
                         {technicalPrompt && (
                             <div className="border border-slate-200 rounded-lg overflow-hidden">
                                 <button 
@@ -383,20 +290,14 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                                     className="w-full flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 transition-colors"
                                 >
                                     <span className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
-                                        <Sparkles className="w-3 h-3 text-purple-500" /> View Generation Prompt (Final)
+                                        <Sparkles className="w-3 h-3 text-purple-500" /> View GenAI Prompt
                                     </span>
                                     {showPrompt ? <ChevronUp className="w-3 h-3 text-slate-400"/> : <ChevronDown className="w-3 h-3 text-slate-400"/>}
                                 </button>
                                 {showPrompt && (
                                     <div className="p-3 bg-slate-900 text-slate-300 font-mono text-[10px] leading-relaxed relative group">
                                          {technicalPrompt}
-                                         <button 
-                                            onClick={() => navigator.clipboard.writeText(technicalPrompt)}
-                                            className="absolute top-2 right-2 p-1.5 bg-white/10 hover:bg-white/20 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Copy Prompt"
-                                         >
-                                            <Copy className="w-3 h-3" />
-                                         </button>
+                                         <button onClick={() => navigator.clipboard.writeText(technicalPrompt)} className="absolute top-2 right-2 p-1.5 bg-white/10 hover:bg-white/20 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity" title="Copy"><Copy className="w-3 h-3" /></button>
                                     </div>
                                 )}
                             </div>
@@ -409,13 +310,13 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
         {activeTab === 'VIDEO' && (
             <div className="space-y-6">
                 <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
-                    <h3 className="text-sm font-bold text-purple-900 mb-2 flex items-center gap-2"><Video className="w-4 h-4" /> Google Veo Video Generator</h3>
-                    <p className="text-xs text-purple-800/80 mb-4">Transform this static asset into a cinematic video using Google's Veo model. (Requires Paid Key).</p>
+                    <h3 className="text-sm font-bold text-purple-900 mb-2 flex items-center gap-2"><Video className="w-4 h-4" /> Google Veo Video</h3>
+                    <p className="text-xs text-purple-800/80 mb-4">Transform this asset into a cinematic video.</p>
                     
                     {!videoUrl && (
-                        <button onClick={handleGenerateVideo} disabled={isGeneratingVideo} className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-lg shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:scale-100">
+                        <button onClick={handleGenerateVideo} disabled={isGeneratingVideo} className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-lg shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] disabled:opacity-50">
                             {isGeneratingVideo ? <Loader2 className="w-4 h-4 animate-spin"/> : <Film className="w-4 h-4" />}
-                            {isGeneratingVideo ? 'Generating with Veo (This takes time)...' : 'Generate Video'}
+                            {isGeneratingVideo ? 'Generating...' : 'Generate Video'}
                         </button>
                     )}
 
@@ -432,8 +333,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
         {activeTab === 'AUDIO' && (
             <div className="space-y-6">
                 <div className="p-4 bg-pink-50 border border-pink-100 rounded-xl">
-                    <h3 className="text-sm font-bold text-pink-900 mb-2 flex items-center gap-2"><Mic className="w-4 h-4" /> UGC Script Generator</h3>
-                    <p className="text-xs text-pink-800/80 mb-4">Generate a TikTok-style script and use AI Voiceover to bring it to life.</p>
+                    <h3 className="text-sm font-bold text-pink-900 mb-2 flex items-center gap-2"><Mic className="w-4 h-4" /> Script & Voice</h3>
                     {audioScript ? <div className="bg-white p-3 rounded-lg border border-pink-100 mb-4"><p className="text-sm text-slate-700 whitespace-pre-wrap font-mono leading-relaxed">{audioScript}</p></div> : <button onClick={handleGenerateScript} disabled={isGeneratingScript} className="w-full py-2 bg-white border border-pink-200 text-pink-700 text-xs font-bold rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-2">{isGeneratingScript ? <div className="w-3 h-3 rounded-full border-2 border-pink-600 border-t-transparent animate-spin"/> : <Wand2 className="w-3.5 h-3.5" />} Generate Script</button>}
                     {audioScript && (<div className="flex gap-2 mt-2"><button onClick={handleGenerateScript} className="flex-1 py-2 text-xs text-pink-600 hover:bg-pink-100 rounded-lg transition-colors">Regenerate</button>{!audioBase64 && (<button onClick={handleGenerateVoice} disabled={isGeneratingAudio} className="flex-1 py-2 bg-pink-600 text-white text-xs font-bold rounded-lg hover:bg-pink-700 transition-colors flex items-center justify-center gap-2">{isGeneratingAudio ? <div className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin"/> : <Mic className="w-3.5 h-3.5" />} Synthesize Voice</button>)}</div>)}
                 </div>
@@ -443,7 +343,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
 
         {activeTab === 'INSIGHTS' && (
             <div className="space-y-6">
-                 {/* PREDICTION AUDIT (Replaces Simulation) */}
+                 {/* PREDICTION AUDIT WITH VISUAL BARS */}
                  {prediction ? (
                      <>
                         <div className={`p-4 rounded-xl border shadow-sm ${prediction.score > 80 ? 'bg-emerald-50 border-emerald-200' : prediction.score > 60 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
@@ -454,12 +354,17 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                                 <span className="text-[14px] font-mono font-bold">{prediction.score}/100</span>
                              </div>
                              
+                             {/* Score Bar */}
+                             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
+                                 <div className={`h-full ${prediction.score > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${prediction.score}%` }}></div>
+                             </div>
+
                              <div className="text-sm font-medium leading-relaxed mt-2 text-slate-800">
                                  "{prediction.reasoning}"
                              </div>
                         </div>
 
-                        {/* SABRI SUBY HEADLINE AUDIT (NEW) */}
+                        {/* SABRI SUBY AUDIT (VISUAL) */}
                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
                             <h3 className="text-sm font-bold text-orange-900 mb-2 flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4" /> Sabri's "4 U's" Audit
@@ -468,7 +373,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                                 <p className="text-xs text-orange-900/80 whitespace-pre-wrap">{prediction.sabriAudit}</p>
                             ) : (
                                 <button onClick={handleSabriAudit} disabled={isAuditingHeadline} className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
-                                    {isAuditingHeadline ? <Loader2 className="w-3 h-3 animate-spin"/> : <CheckCircle2 className="w-3.5 h-3.5" />} Audit Headline (Urgent, Unique, Ultra-Specific, Useful)
+                                    {isAuditingHeadline ? <Loader2 className="w-3 h-3 animate-spin"/> : <CheckCircle2 className="w-3.5 h-3.5" />} Run Headline Audit
                                 </button>
                             )}
                         </div>
@@ -478,7 +383,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                             <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm"><span className="text-[10px] uppercase text-slate-400 font-bold">Emotional</span><div className="text-sm font-bold text-slate-700">{prediction.emotionalResonance}</div></div>
                         </div>
                      </>
-                 ) : (<div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-500 text-xs text-center">Run an Audit to get a Prediction Score.</div>)}
+                 ) : (<div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-500 text-xs text-center"><button onClick={() => onAnalyze && onAnalyze(node.id)} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Run First Audit</button></div>)}
                  
                  {/* MAFIA OFFER GENERATOR */}
                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-white">
@@ -500,37 +405,10 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                                       </div>
                                   ))}
                               </div>
-                              <div className="text-[10px] text-emerald-400 font-mono border border-emerald-900 bg-emerald-900/20 p-2 rounded">
-                                  Guarantee: {mafiaOffer.riskReversal}
-                              </div>
                           </div>
                       ) : (
-                          <p className="text-[11px] text-slate-400 italic">"Make them an offer they can't refuse." - Sabri Suby.</p>
+                          <p className="text-[11px] text-slate-400 italic">"Make them an offer they can't refuse."</p>
                       )}
-                 </div>
-
-                 {/* STRATEGIC ANALYSIS */}
-                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                     <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-600" /><h3 className="text-sm font-bold text-indigo-900">Strategic Alignment</h3></div>
-                        {testingTier && <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-bold">{testingTier}</span>}
-                     </div>
-                     
-                     {congruenceRationale && (
-                         <div className="mb-3 pb-3 border-b border-indigo-200/50">
-                             <span className="text-[10px] text-indigo-500 font-bold uppercase block mb-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Congruency Check</span>
-                             <p className="text-xs text-indigo-900/80 font-medium bg-white/50 p-2 rounded-lg border border-indigo-100">{congruenceRationale}</p>
-                         </div>
-                     )}
-
-                     {variableIsolated && (
-                         <div className="mb-3 pb-3 border-b border-indigo-200/50">
-                             <span className="text-[10px] text-indigo-400 font-bold uppercase block mb-1">Variable Isolated</span>
-                             <p className="text-xs text-indigo-800 font-medium">{variableIsolated}</p>
-                         </div>
-                     )}
-
-                     <div className="text-center py-2"><button onClick={() => onAnalyze && onAnalyze(node.id)} disabled={!!prediction} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Run Prediction Audit</button></div>
                  </div>
             </div>
         )}

@@ -14,10 +14,12 @@ interface CanvasProps {
   onNodeAction: (action: string, nodeId: string) => void;
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
-  onNodeMove: (id: string, x: number, y: number) => void; // New prop for moving nodes
+  onNodeMove: (id: string, x: number, y: number) => void; 
+  highlightedEdgeIds?: Set<string>; // New Prop for Path Highlighting
+  highlightedNodeIds?: Set<string>; // New Prop for Path Highlighting
 }
 
-const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeAction, selectedNodeId, onSelectNode, onNodeMove }, ref) => {
+const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeAction, selectedNodeId, onSelectNode, onNodeMove, highlightedEdgeIds, highlightedNodeIds }, ref) => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.8);
   
@@ -81,11 +83,8 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
   // --- MOUSE HANDLERS ---
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-
-    // 1. Check if clicking a button/interactive element inside a node (Don't drag)
     if (target.closest('button') || target.closest('input') || target.closest('select')) return;
 
-    // 2. Check if clicking a Node (Start Node Drag)
     const nodeElement = target.closest('.node-interactive');
     if (nodeElement) {
        const nodeId = nodeElement.getAttribute('data-id');
@@ -105,14 +104,12 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
        return;
     }
 
-    // 3. Otherwise, Start Canvas Pan
     setIsPanning(true);
     setLastMousePos({ x: e.clientX, y: e.clientY });
     onSelectNode(null);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    // 1. Handle Node Dragging
     if (draggedNode) {
         const deltaX = (e.clientX - draggedNode.startX) / zoom;
         const deltaY = (e.clientY - draggedNode.startY) / zoom;
@@ -120,7 +117,6 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
         return;
     }
     
-    // 2. Handle Canvas Panning
     if (!isPanning) return;
     const dx = e.clientX - lastMousePos.x;
     const dy = e.clientY - lastMousePos.y;
@@ -144,10 +140,8 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
        const touch = e.touches[0];
        const target = e.target as HTMLElement;
 
-       // Interactive check
        if (target.closest('button') || target.closest('input') || target.closest('select')) return;
 
-       // Node check
        const nodeElement = target.closest('.node-interactive');
        if (nodeElement) {
            const nodeId = nodeElement.getAttribute('data-id');
@@ -167,13 +161,11 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
            return;
        }
 
-       // Pan Start
        setIsPanning(true);
        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
        onSelectNode(null);
 
     } else if (e.touches.length === 2) {
-       // Pinch Start
        const t1 = e.touches[0];
        const t2 = e.touches[1];
        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
@@ -182,14 +174,12 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Prevent default scrolling only if we are actively interacting
     if (isPanning || draggedNode || e.touches.length === 2) {
         e.preventDefault(); 
     }
 
     if (e.touches.length === 1) {
         const touch = e.touches[0];
-
         if (draggedNode) {
             const deltaX = (touch.clientX - draggedNode.startX) / zoom;
             const deltaY = (touch.clientY - draggedNode.startY) / zoom;
@@ -204,7 +194,6 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-
         if (lastPinchDistRef.current !== null) {
             const delta = dist - lastPinchDistRef.current;
             const zoomSpeed = 0.005;
@@ -237,14 +226,76 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
       const controlDist = Math.max(dist * 0.5, 100); 
       const path = `M ${sourceX} ${sourceY} C ${sourceX + controlDist} ${sourceY}, ${targetX - controlDist} ${targetY}, ${targetX} ${targetY}`;
 
+      // GOLDEN THREAD LOGIC
+      const isHighlighted = highlightedEdgeIds?.has(edge.id);
+      const isDimmed = highlightedEdgeIds && highlightedEdgeIds.size > 0 && !isHighlighted;
+
       return (
-        <g key={edge.id}>
-            <path d={path} stroke="white" strokeWidth="6" fill="none" strokeOpacity="0.8" />
-            <path d={path} stroke="#CBD5E1" strokeWidth="2" fill="none" className="transition-all duration-500" strokeLinecap="round" />
-            <circle cx={targetX} cy={targetY} r="4" fill="white" stroke="#CBD5E1" strokeWidth="2" />
+        <g key={edge.id} className="transition-all duration-300">
+            {/* Base Line */}
+            <path d={path} stroke="white" strokeWidth="6" fill="none" strokeOpacity={isDimmed ? 0.3 : 0.8} />
+            
+            {/* Active Line */}
+            <path 
+                d={path} 
+                stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} // Gold or Slate
+                strokeWidth={isHighlighted ? "3" : "2"} 
+                fill="none" 
+                className="transition-all duration-500" 
+                strokeLinecap="round" 
+                strokeOpacity={isDimmed ? 0.2 : 1}
+            />
+            
+            {/* Target Dot */}
+            <circle cx={targetX} cy={targetY} r="4" fill={isHighlighted ? "#F59E0B" : "white"} stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} strokeWidth="2" opacity={isDimmed ? 0.2 : 1}/>
         </g>
       );
     });
+  };
+
+  // MINI MAP CALCULATION
+  const renderMiniMap = () => {
+      if (nodes.length === 0) return null;
+      
+      const MIN_X = Math.min(...nodes.map(n => n.x));
+      const MAX_X = Math.max(...nodes.map(n => n.x + NODE_WIDTH));
+      const MIN_Y = Math.min(...nodes.map(n => n.y));
+      const MAX_Y = Math.max(...nodes.map(n => n.y + 200));
+      
+      const mapWidth = 200;
+      const mapHeight = 120;
+      const worldWidth = MAX_X - MIN_X + 1000;
+      const worldHeight = MAX_Y - MIN_Y + 1000;
+      const scaleX = mapWidth / worldWidth;
+      const scaleY = mapHeight / worldHeight;
+      const scale = Math.min(scaleX, scaleY);
+
+      return (
+          <div className="absolute bottom-8 left-8 w-[200px] h-[120px] bg-white/90 border border-slate-200 rounded-lg shadow-lg overflow-hidden hidden md:block z-50 pointer-events-none opacity-80">
+              <div className="relative w-full h-full">
+                  {nodes.map(node => (
+                      <div 
+                        key={node.id}
+                        className={`absolute w-2 h-2 rounded-full ${highlightedNodeIds?.has(node.id) ? 'bg-amber-500 scale-150' : selectedNodeId === node.id ? 'bg-blue-600' : 'bg-slate-300'}`}
+                        style={{
+                            left: (node.x - MIN_X + 500) * scale,
+                            top: (node.y - MIN_Y + 500) * scale
+                        }}
+                      />
+                  ))}
+                  {/* Viewport Indicator */}
+                  <div 
+                    className="absolute border border-blue-500 bg-blue-500/10 rounded-sm"
+                    style={{
+                        left: (-offset.x - MIN_X + 500) * scale / zoom,
+                        top: (-offset.y - MIN_Y + 500) * scale / zoom,
+                        width: (containerRef.current?.clientWidth || 0) * scale / zoom,
+                        height: (containerRef.current?.clientHeight || 0) * scale / zoom
+                    }}
+                  />
+              </div>
+          </div>
+      );
   };
 
   return (
@@ -283,9 +334,13 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
             selected={selectedNodeId === node.id}
             onClick={(e) => { e.stopPropagation(); onSelectNode(node.id); }}
             onAction={onNodeAction}
+            isDimmed={highlightedNodeIds && highlightedNodeIds.size > 0 && !highlightedNodeIds.has(node.id)}
           />
         ))}
       </div>
+      
+      {/* MINI MAP */}
+      {renderMiniMap()}
       
       {/* Zoom Controls */}
       <div className="absolute bottom-8 right-8 flex flex-col gap-2 z-50">

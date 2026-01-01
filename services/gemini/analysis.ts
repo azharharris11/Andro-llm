@@ -1,6 +1,6 @@
 
 import { Type } from "@google/genai";
-import { ProjectContext, NodeData, PredictionMetrics, GenResult, AdCopy, LanguageRegister } from "../../types";
+import { ProjectContext, NodeData, PredictionMetrics, GenResult, AdCopy, LanguageRegister, MarketAwareness, FunnelStage } from "../../types";
 import { ai, extractJSON } from "./client";
 
 export const checkAdCompliance = async (adCopy: AdCopy): Promise<string> => {
@@ -64,6 +64,7 @@ export const predictCreativePerformance = async (
       1. Hook Strength: Does it stop the scroll in 0.5s? (Pattern Interrupt)
       2. Clarity: Is the offer/benefit immediately understood?
       3. Emotional Resonance: Does it hit a nerve or just state facts?
+      4. Congruency: Does the visual prove the text? (The Golden Thread)
       
       OUTPUT JSON:
       - score: Number 0-100 (Winning ads are usually 85+).
@@ -116,15 +117,16 @@ export const analyzeLandingPageContext = async (markdown: string): Promise<Proje
   
   const prompt = `You are a Data Analyst for a Direct Response Agency. 
     Analyze the following raw data (Landing Page Content) to extract the foundational truths.
-    Also extract 2-3 examples of existing copy/headlines found on the page to serve as "Tone Calibration" data.
     
     RAW DATA:
     ${markdown.substring(0, 30000)}
 
-    IMPORTANT: Analyze the language register/tone.
-    - If they use "Anda" or formal language (or it's B2B/Medical), set languageRegister to 'Formal/Professional (Anda/Saya) - B2B/Luxury/Medical'.
-    - If they use "Aku/Kamu" or "Mom", set to 'Casual/Polite (Aku/Kamu) - General Wellness/Mom'.
-    - If they use "Gue/Lo" or strictly Gen-Z slang, set to 'Street/Slang (Gue/Lo) - Gen Z/Lifestyle'.
+    TASKS:
+    1. Determine the 'Market Awareness' level.
+       - If it explains "What is X?", it's Unaware/Problem Aware.
+       - If it compares "Us vs Them", it's Solution Aware.
+       - If it's a hard offer page, it's Product/Most Aware.
+    2. Analyze Tone/Register.
   `;
 
   const response = await ai.models.generateContent({
@@ -140,14 +142,20 @@ export const analyzeLandingPageContext = async (markdown: string): Promise<Proje
           targetAudience: { type: Type.STRING, description: "Specific demographics and psychographics." },
           targetCountry: { type: Type.STRING },
           brandVoice: { type: Type.STRING },
-          brandVoiceOptions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "5 distinct brand voice options based on the content tone." },
+          brandVoiceOptions: { type: Type.ARRAY, items: { type: Type.STRING } },
           offer: { type: Type.STRING, description: "The primary hook or deal found on the page." },
-          offerOptions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "5 potential offer angles or deal structures inferred." },
-          brandCopyExamples: { type: Type.STRING, description: "2-3 raw sentences/headlines found on the page that represent the brand voice best." },
+          brandCopyExamples: { type: Type.STRING, description: "2-3 raw sentences/headlines found on the page." },
           languageRegister: { type: Type.STRING, enum: [
              'Street/Slang (Gue/Lo) - Gen Z/Lifestyle', 
              'Casual/Polite (Aku/Kamu) - General Wellness/Mom', 
              'Formal/Professional (Anda/Saya) - B2B/Luxury/Medical'
+          ]},
+          marketAwareness: { type: Type.STRING, enum: [
+             'Unaware (No knowledge of problem)',
+             'Problem Aware (Knows problem, seeks solution)',
+             'Solution Aware (Knows solutions, comparing options)',
+             'Product Aware (Knows you, needs a deal)',
+             'Most Aware (Ready to buy, needs urgency)'
           ]}
         },
         required: ["productName", "productDescription", "targetAudience"]
@@ -157,6 +165,11 @@ export const analyzeLandingPageContext = async (markdown: string): Promise<Proje
 
   const data = extractJSON<Partial<ProjectContext>>(response.text || "{}");
   
+  // Auto-derive funnel stage
+  let derivedFunnel = FunnelStage.TOF;
+  if (data.marketAwareness?.includes("Solution")) derivedFunnel = FunnelStage.MOF;
+  if (data.marketAwareness?.includes("Product") || data.marketAwareness?.includes("Most")) derivedFunnel = FunnelStage.BOF;
+
   return {
     productName: data.productName || "Unknown Product",
     productDescription: data.productDescription || "",
@@ -165,10 +178,12 @@ export const analyzeLandingPageContext = async (markdown: string): Promise<Proje
     brandVoice: data.brandVoice || "Professional",
     brandVoiceOptions: data.brandVoiceOptions || [],
     offer: data.offer || "Shop Now",
-    offerOptions: data.offerOptions || [],
+    offerOptions: [],
     brandCopyExamples: data.brandCopyExamples || "",
     landingPageUrl: "",
-    languageRegister: data.languageRegister as LanguageRegister || LanguageRegister.CASUAL
+    languageRegister: data.languageRegister as LanguageRegister || LanguageRegister.CASUAL,
+    marketAwareness: data.marketAwareness as MarketAwareness || MarketAwareness.PROBLEM_AWARE,
+    funnelStage: derivedFunnel
   } as ProjectContext;
 };
 
@@ -180,7 +195,7 @@ export const analyzeImageContext = async (base64Image: string): Promise<ProjectC
     contents: {
       parts: [
         { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-        { text: "Analyze this product image. Extract Product Name, Description, Target Audience. Infer Brand Voice, Offers, and Language Register (Is it Gen Z Slang, Mom Casual, or Professional B2B?)." }
+        { text: "Analyze this product image. Extract Product Name, Description, Target Audience. Infer Brand Voice, Offers, Language Register and Market Awareness Level." }
       ]
     },
     config: {
@@ -195,12 +210,18 @@ export const analyzeImageContext = async (base64Image: string): Promise<ProjectC
           brandVoice: { type: Type.STRING },
           brandVoiceOptions: { type: Type.ARRAY, items: { type: Type.STRING } },
           offer: { type: Type.STRING },
-          offerOptions: { type: Type.ARRAY, items: { type: Type.STRING } },
-          brandCopyExamples: { type: Type.STRING, description: "2-3 example copy lines matching this visual vibe." },
+          brandCopyExamples: { type: Type.STRING },
           languageRegister: { type: Type.STRING, enum: [
              'Street/Slang (Gue/Lo) - Gen Z/Lifestyle', 
              'Casual/Polite (Aku/Kamu) - General Wellness/Mom', 
              'Formal/Professional (Anda/Saya) - B2B/Luxury/Medical'
+          ]},
+          marketAwareness: { type: Type.STRING, enum: [
+             'Unaware (No knowledge of problem)',
+             'Problem Aware (Knows problem, seeks solution)',
+             'Solution Aware (Knows solutions, comparing options)',
+             'Product Aware (Knows you, needs a deal)',
+             'Most Aware (Ready to buy, needs urgency)'
           ]}
         },
         required: ["productName", "productDescription"]
@@ -210,6 +231,11 @@ export const analyzeImageContext = async (base64Image: string): Promise<ProjectC
 
   const data = extractJSON<Partial<ProjectContext>>(response.text || "{}");
 
+  // Auto-derive funnel stage
+  let derivedFunnel = FunnelStage.TOF;
+  if (data.marketAwareness?.includes("Solution")) derivedFunnel = FunnelStage.MOF;
+  if (data.marketAwareness?.includes("Product") || data.marketAwareness?.includes("Most")) derivedFunnel = FunnelStage.BOF;
+
   return {
     productName: data.productName || "Analyzed Product",
     productDescription: data.productDescription || "A revolutionary product.",
@@ -218,8 +244,10 @@ export const analyzeImageContext = async (base64Image: string): Promise<ProjectC
     brandVoice: data.brandVoice || "Visual & Aesthetic",
     brandVoiceOptions: data.brandVoiceOptions || [],
     offer: data.offer || "Check it out",
-    offerOptions: data.offerOptions || [],
+    offerOptions: [],
     brandCopyExamples: data.brandCopyExamples || "",
-    languageRegister: data.languageRegister as LanguageRegister || LanguageRegister.CASUAL
+    languageRegister: data.languageRegister as LanguageRegister || LanguageRegister.CASUAL,
+    marketAwareness: data.marketAwareness as MarketAwareness || MarketAwareness.PROBLEM_AWARE,
+    funnelStage: derivedFunnel
   } as ProjectContext;
 };
