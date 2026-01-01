@@ -14,6 +14,49 @@ interface InspectorProps {
   project?: ProjectContext;
 }
 
+// Circular Progress Component
+const CircularScore = ({ score }: { score: number }) => {
+    const radius = 30;
+    const stroke = 5;
+    const normalizedRadius = radius - stroke * 2;
+    const circumference = normalizedRadius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (score / 100) * circumference;
+    
+    // Determine Color
+    let color = "#ef4444"; // Red
+    if (score > 60) color = "#f59e0b"; // Orange/Yellow
+    if (score > 80) color = "#10b981"; // Emerald/Green
+
+    return (
+        <div className="relative flex items-center justify-center w-[80px] h-[80px]">
+            <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg]">
+                <circle
+                    stroke="#e2e8f0"
+                    strokeWidth={stroke}
+                    fill="transparent"
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                />
+                <circle
+                    stroke={color}
+                    fill="transparent"
+                    strokeWidth={stroke}
+                    strokeDasharray={circumference + ' ' + circumference}
+                    style={{ strokeDashoffset, transition: 'stroke-dashoffset 1s ease-in-out' }}
+                    strokeLinecap="round"
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+                <span className="text-xl font-bold font-mono text-slate-800">{score}</span>
+            </div>
+        </div>
+    );
+};
+
 // Helper to decode raw PCM
 const decodeAudioData = async (base64: string, ctx: AudioContext): Promise<AudioBuffer> => {
     const binaryString = atob(base64);
@@ -55,20 +98,10 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
   
   const technicalPrompt = node.meta?.finalGenerationPrompt;
   const rationale = node.meta?.concept?.rationale;
-  const uglyAdStructure = node.meta?.concept?.uglyAdStructure; 
   
   const personaName = node.meta?.name || node.meta?.personaName || "General Audience";
-  const personaMotivation = node.meta?.motivation || "N/A";
-  const storyNarrative = node.storyData?.narrative || node.meta?.storyData?.narrative;
-  const bigIdea = node.bigIdeaData?.headline || node.meta?.bigIdeaData?.headline;
-  const mechanism = node.mechanismData?.scientificPseudo || node.meta?.mechanismData?.scientificPseudo;
   const awarenessLevel = project?.marketAwareness || "Unknown";
   
-  const strategicAngle = node.meta?.angle || "Direct Benefit";
-  const executionHook = node.hookData || node.adCopy?.headline || node.title;
-  const formatUsed = node.format || "Standard";
-  const languageStyle = project?.languageRegister || "Casual";
-
   const handleNextSlide = () => setCarouselIndex((prev) => (prev + 1) % allImages.length);
   const handlePrevSlide = () => setCarouselIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
 
@@ -153,11 +186,13 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
       document.body.removeChild(link);
   };
 
-  // Responsive Width Calculation
-  const containerWidthClass = isExpanded ? 'w-full md:w-[800px]' : 'w-full md:w-[450px]';
+  // Responsive Width Calculation: Use fixed positioning logic better for mobile
+  const containerClass = isExpanded 
+    ? 'fixed inset-0 z-50 w-full' 
+    : 'w-full md:w-[450px]';
 
   return (
-    <div className={`h-full ${containerWidthClass} flex flex-col bg-white border-l border-slate-200 shadow-2xl animate-in slide-in-from-right duration-300 pointer-events-auto transition-all`}>
+    <div className={`h-full ${containerClass} flex flex-col bg-white border-l border-slate-200 shadow-2xl animate-in slide-in-from-right duration-300 pointer-events-auto transition-all`}>
       <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -253,7 +288,7 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                 )}
                 </div>
 
-                {/* STRATEGIC DNA - REFACTORED FOR READABILITY */}
+                {/* STRATEGIC DNA */}
                 <div className="mt-8 border-t border-slate-200 pt-6 animate-in slide-in-from-bottom-2 duration-300">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
@@ -262,7 +297,6 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                     </div>
 
                     <div className="space-y-4">
-                        {/* A. IDENTITY MATRIX */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Target Persona</span>
@@ -274,7 +308,6 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                             </div>
                         </div>
 
-                        {/* B. VISUAL RATIONALE */}
                         {rationale && (
                             <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-100">
                                 <span className="text-[9px] font-bold text-amber-600 uppercase block mb-1 flex items-center gap-1"><Eye className="w-3 h-3"/> Why this works</span>
@@ -282,7 +315,6 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
                             </div>
                         )}
                         
-                        {/* C. TECHNICAL PROMPT */}
                         {technicalPrompt && (
                             <div className="border border-slate-200 rounded-lg overflow-hidden">
                                 <button 
@@ -343,24 +375,20 @@ const Inspector: React.FC<InspectorProps> = ({ node, onClose, onAnalyze, onUpdat
 
         {activeTab === 'INSIGHTS' && (
             <div className="space-y-6">
-                 {/* PREDICTION AUDIT WITH VISUAL BARS */}
+                 {/* PREDICTION AUDIT WITH VISUAL CIRCLE */}
                  {prediction ? (
                      <>
                         <div className={`p-4 rounded-xl border shadow-sm ${prediction.score > 80 ? 'bg-emerald-50 border-emerald-200' : prediction.score > 60 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
-                                    <BrainCircuit className="w-3 h-3" /> Creative Audit
-                                </span>
-                                <span className="text-[14px] font-mono font-bold">{prediction.score}/100</span>
-                             </div>
-                             
-                             {/* Score Bar */}
-                             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
-                                 <div className={`h-full ${prediction.score > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${prediction.score}%` }}></div>
-                             </div>
-
-                             <div className="text-sm font-medium leading-relaxed mt-2 text-slate-800">
-                                 "{prediction.reasoning}"
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2 text-slate-500">
+                                        <BrainCircuit className="w-3 h-3" /> Creative Audit
+                                    </span>
+                                    <div className="text-sm font-medium leading-relaxed text-slate-800 pr-4">
+                                        "{prediction.reasoning}"
+                                    </div>
+                                </div>
+                                <CircularScore score={prediction.score} />
                              </div>
                         </div>
 

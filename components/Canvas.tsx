@@ -15,8 +15,8 @@ interface CanvasProps {
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   onNodeMove: (id: string, x: number, y: number) => void; 
-  highlightedEdgeIds?: Set<string>; // New Prop for Path Highlighting
-  highlightedNodeIds?: Set<string>; // New Prop for Path Highlighting
+  highlightedEdgeIds?: Set<string>; 
+  highlightedNodeIds?: Set<string>; 
 }
 
 const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeAction, selectedNodeId, onSelectNode, onNodeMove, highlightedEdgeIds, highlightedNodeIds }, ref) => {
@@ -235,19 +235,20 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
             {/* Base Line */}
             <path d={path} stroke="white" strokeWidth="6" fill="none" strokeOpacity={isDimmed ? 0.3 : 0.8} />
             
-            {/* Active Line */}
+            {/* Active Line - With GLOW if highlighted */}
             <path 
                 d={path} 
-                stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} // Gold or Slate
-                strokeWidth={isHighlighted ? "3" : "2"} 
+                stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} 
+                strokeWidth={isHighlighted ? "4" : "2"} 
                 fill="none" 
                 className="transition-all duration-500" 
                 strokeLinecap="round" 
                 strokeOpacity={isDimmed ? 0.2 : 1}
+                filter={isHighlighted ? "url(#glow)" : ""}
             />
             
             {/* Target Dot */}
-            <circle cx={targetX} cy={targetY} r="4" fill={isHighlighted ? "#F59E0B" : "white"} stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} strokeWidth="2" opacity={isDimmed ? 0.2 : 1}/>
+            <circle cx={targetX} cy={targetY} r={isHighlighted ? "6" : "4"} fill={isHighlighted ? "#F59E0B" : "white"} stroke={isHighlighted ? "#F59E0B" : "#CBD5E1"} strokeWidth="2" opacity={isDimmed ? 0.2 : 1}/>
         </g>
       );
     });
@@ -276,7 +277,7 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
                   {nodes.map(node => (
                       <div 
                         key={node.id}
-                        className={`absolute w-2 h-2 rounded-full ${highlightedNodeIds?.has(node.id) ? 'bg-amber-500 scale-150' : selectedNodeId === node.id ? 'bg-blue-600' : 'bg-slate-300'}`}
+                        className={`absolute w-2 h-2 rounded-full ${highlightedNodeIds?.has(node.id) ? 'bg-amber-500 scale-150 ring-2 ring-amber-200' : selectedNodeId === node.id ? 'bg-blue-600' : 'bg-slate-300'}`}
                         style={{
                             left: (node.x - MIN_X + 500) * scale,
                             top: (node.y - MIN_Y + 500) * scale
@@ -314,6 +315,19 @@ const Canvas = forwardRef<CanvasHandle, CanvasProps>(({ nodes, edges, onNodeActi
     >
       <div style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: '0 0', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
         
+        {/* Define SVG Filters */}
+        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+            <defs>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+        </svg>
+
         {/* Infinite Dot Background */}
         <div className="absolute top-[-5000px] bottom-[-5000px] left-[-5000px] w-[8000px] bg-dot opacity-60 pointer-events-none"></div>
 
